@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Fredoka:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* TIPOGRAFÍAS DE RESTAURANT & CEVICHERÍA ARJA */
+  --font-sans: "Barlow Condensed", system-ui, -apple-system, sans-serif;
+  --font-title: "Fredoka", sans-serif;       /* Fredoka Bold 700 para Títulos y Categorías */
+  --font-category: "Fredoka", sans-serif;    /* Fredoka para Categorías */
+  --font-dish: "Barlow Condensed", sans-serif;/* Barlow Condensed para platos, descripciones y precios */
+  --font-slogan: "Barlow Condensed", sans-serif;/* Barlow Condensed para eslogans/marquee */
+  
+  /* COLORES DE RESTAURANT & CEVICHERÍA ARJA */
+  --color-primary: #1597A5;      /* Turquesa marino */
+  --color-secondary: #E9B936;    /* Amarillo / Dorado */
+  --color-dark: #23464A;         /* Verde petróleo / oscuro */
+  --color-light: #F5F1DF;        /* Fondo Crema marfil */
+  --color-accent: #C93663;       /* Fucsia marino */
+  
+  --shadow-glass: 0 8px 32px 0 rgba(21, 151, 165, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(255, 255, 255, 0.5);
+}
+
+body {
+  background-color: var(--color-light);
+  color: var(--color-dark);
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+/* Custom scrollbar hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Wave decoration for sections */
+@keyframes wave {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
+}
+
+.wave-icon {
+  animation: wave 3s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* Category header underline animation */
+.category-underline {
+  position: relative;
+}
+
+.category-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+  border-radius: 2px;
+}
