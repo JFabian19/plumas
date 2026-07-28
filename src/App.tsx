@@ -1,26 +1,24 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ShoppingBag, Plus, Minus, ChevronRight, X, Trash2, Utensils, Facebook, MapPin, Loader2, Gift, Star } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, ChevronRight, X, Trash2, Utensils, Facebook, MapPin, Loader2, Gift, Star, Navigation, CreditCard, DollarSign, User, CheckCircle, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchSheetData, submitSheetData, SheetDish, SheetCategory, SHEET_ID } from './services/googleSheets';
 import { DEFAULT_MENU_DATA } from './data/menuData';
 
 // ==========================================
-// 📋 CONFIGURACIÓN DE LA PLANTILLA DEL MENÚ
+// 📋 CONFIGURACIÓN DE RESTAURANT & CEVICHERÍA ARJA
 // ==========================================
 const RESTAURANTE_NAME = "Restaurant & Cevichería Arja";
 const RESTAURANTE_SLOGAN = "Seducción Marina";
+const RESTAURANTE_ADDRESS = "Jr. 28 de Julio # 274";
 const WHATSAPP_NUMBER = "51991166220";
 const FACEBOOK_URL = "";
-const MAPS_URL = "";
-const LOGO_FOOTER_PATH = ""; // Reemplaza con la ruta de tu logo en public/ (ej: /logo.png)
-const BANNER_PATH = ""; // Reemplaza con la ruta de tu banner en public/ (ej: /banner.png)
+const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=Jr.+28+de+Julio+274";
+const LOGO_FOOTER_PATH = "";
+const BANNER_PATH = "";
 const MARQUEE_TEXT = "🐟 SEDUCCIÓN MARINA EN CADA BOCADO • CEVICHES, LECHES DE TIGRE Y DÚOS BIEN SERVIDOS • ¡TODOS CON CHILCANO DE CORTESÍA! 🌊🍋 ";
 // ==========================================
 
-// Mapa de imágenes locales por defecto para platos conocidos (vacío por defecto para la plantilla)
-const LOCAL_IMAGES: Record<string, string> = {
-  // "Nombre del Plato": "nombre_imagen.jpg",
-};
+const LOCAL_IMAGES: Record<string, string> = {};
 
 interface Dish {
   nombre: string;
@@ -48,6 +46,19 @@ export default function App() {
   const [showSummary, setShowSummary] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Checkout and Delivery state
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [customerData, setCustomerData] = useState({
+    nombre: '',
+    direccion: '',
+    gpsUrl: '',
+    medioPago: 'Yape' as 'Yape' | 'Tarjeta' | 'Efectivo',
+    montoEfectivo: ''
+  });
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationSuccess, setLocationSuccess] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // States for Birthday Form
   const [showBirthdayForm, setShowBirthdayForm] = useState(false);
@@ -164,13 +175,56 @@ export default function App() {
     }, 0);
   };
 
-  const sendToWhatsApp = () => {
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Tu navegador no soporta geolocalización por GPS.");
+      return;
+    }
+    setIsGettingLocation(true);
+    setLocationError(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const url = `https://maps.google.com/?q=${lat},${lng}`;
+        setCustomerData(prev => ({ ...prev, gpsUrl: url }));
+        setIsGettingLocation(false);
+        setLocationSuccess(true);
+      },
+      (error) => {
+        console.error(error);
+        setIsGettingLocation(false);
+        setLocationError("No se pudo obtener la ubicación. Por favor activa el GPS de tu dispositivo.");
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
+  const handleCheckoutSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerData.nombre.trim()) {
+      alert("Por favor ingresa tu nombre.");
+      return;
+    }
+
     const total = calculateTotal();
-    let message = `*Hola ${RESTAURANTE_NAME}, deseo realizar un pedido:*\n\n`;
+    let message = `*¡Hola ${RESTAURANTE_NAME}! Deseo realizar un pedido:*\n\n`;
+
+    message += `👤 *DATOS PARA LA ENTREGA*\n`;
+    message += `• *Nombre:* ${customerData.nombre.trim()}\n`;
+    message += `• *Dirección / Ref:* ${customerData.direccion.trim() || 'Entrega en local'}\n`;
+    if (customerData.gpsUrl) {
+      message += `• *Ubicación GPS:* ${customerData.gpsUrl}\n`;
+    }
+    message += `• *Medio de Pago:* ${customerData.medioPago}${customerData.medioPago === 'Efectivo' && customerData.montoEfectivo ? ` (Paga con S/.${customerData.montoEfectivo})` : ''}\n\n`;
+
+    message += `🛒 *DETALLE DEL PEDIDO*\n`;
     cart.forEach(item => {
       message += `• ${item.cantidad} x ${item.nombre} (${item.precio})\n`;
     });
-    message += `\n*TOTAL: S/.${total.toFixed(2)}*`;
+
+    message += `\n*TOTAL A PAGAR: S/.${total.toFixed(2)}*`;
+
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
@@ -247,7 +301,7 @@ export default function App() {
     <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden flex flex-col font-sans">
       <header className="sticky top-0 bg-white/95 backdrop-blur-md z-50 px-5 py-4 flex justify-between items-center border-b border-gray-100">
         <div className="flex flex-col items-start">
-          <h1 className="font-title text-[28px] text-primary leading-none tracking-wide">{RESTAURANTE_NAME}</h1>
+          <h1 className="font-title text-[26px] text-primary leading-none tracking-wide">{RESTAURANTE_NAME}</h1>
           <span className="font-slogan text-[11px] text-secondary font-bold tracking-wider mt-0.5">{RESTAURANTE_SLOGAN}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -269,6 +323,7 @@ export default function App() {
               rel="noopener noreferrer"
               whileTap={{ scale: 0.95 }}
               className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center text-primary cursor-pointer"
+              title={RESTAURANTE_ADDRESS}
             >
               <MapPin size={22} />
             </motion.a>
@@ -288,6 +343,17 @@ export default function App() {
         </div>
       </header>
 
+      {/* Address Banner */}
+      <div className="bg-primary/10 border-b border-primary/20 px-5 py-2 flex items-center justify-between text-[12px] font-bold text-dark">
+        <div className="flex items-center gap-1.5 truncate">
+          <MapPin size={15} className="text-primary shrink-0 animate-bounce" />
+          <span className="truncate">📍 {RESTAURANTE_ADDRESS}</span>
+        </div>
+        <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-[10px] uppercase font-extrabold shrink-0 ml-2">
+          Ver mapa
+        </a>
+      </div>
+
       <div className="w-full bg-primary py-2 overflow-hidden flex items-center">
         <div className="animate-marquee flex gap-6 text-white font-slogan font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
           {[...Array(10)].map((_, i) => (
@@ -301,7 +367,7 @@ export default function App() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
           animate={{ 
-            boxShadow: ["0px 0px 0px 0px rgba(245,158,11,0.6)", "0px 0px 20px 8px rgba(245,158,11,0)", "0px 0px 0px 0px rgba(245,158,11,0)"] 
+            boxShadow: ["0px 0px 0px 0px rgba(233,185,54,0.6)", "0px 0px 20px 8px rgba(233,185,54,0)", "0px 0px 0px 0px rgba(233,185,54,0)"] 
           }}
           transition={{ repeat: Infinity, duration: 1.5 }}
           onClick={() => setShowBirthdayForm(true)}
@@ -406,8 +472,20 @@ export default function App() {
           </motion.button>
         </section>
 
-        <footer className="mt-8 pt-8 pb-10 border-t border-gray-200 flex flex-col items-center justify-center">
-          <p className="font-title text-2xl text-primary mb-4">{RESTAURANTE_NAME}</p>
+        <footer className="mt-8 pt-8 pb-10 border-t border-gray-200 flex flex-col items-center justify-center text-center px-4">
+          <p className="font-title text-2xl text-primary mb-1">{RESTAURANTE_NAME}</p>
+          <p className="font-slogan text-xs text-secondary font-bold mb-3">{RESTAURANTE_SLOGAN}</p>
+
+          <a 
+            href={MAPS_URL} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs px-4 py-2.5 rounded-full mb-5 transition-colors border border-primary/20 shadow-sm"
+          >
+            <MapPin size={16} />
+            <span>{RESTAURANTE_ADDRESS}</span>
+          </a>
+
           <div className="w-32 h-32 mb-6 rounded-2xl border border-dashed border-primary/30 bg-primary/5 flex items-center justify-center text-center p-2">
             <span className="font-dish font-bold text-[10px] text-primary uppercase tracking-wide">aca va a imagen</span>
           </div>
@@ -430,7 +508,7 @@ export default function App() {
       </main>
 
       <AnimatePresence>
-        {cartCount > 0 && !showSummary && (
+        {cartCount > 0 && !showSummary && !showCheckoutForm && (
           <motion.div
             initial={{ y: 100 }}
             animate={{ y: 0 }}
@@ -460,6 +538,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Summary Modal */}
       <AnimatePresence>
         {showSummary && (
           <motion.div
@@ -518,10 +597,13 @@ export default function App() {
                 </div>
               </div>
               <button
-                onClick={sendToWhatsApp}
-                className="w-full bg-[#25D366] text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-green-100 hover:scale-[1.02] transition-transform font-bold"
+                onClick={() => {
+                  setShowSummary(false);
+                  setShowCheckoutForm(true);
+                }}
+                className="w-full bg-[#25D366] text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-green-100 hover:scale-[1.02] transition-transform font-bold text-sm uppercase tracking-wider"
               >
-                Enviar Pedido a WhatsApp
+                Continuar al Pedido
                 <ChevronRight size={20} />
               </button>
             </motion.div>
@@ -529,6 +611,155 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Checkout / Delivery Form Modal */}
+      <AnimatePresence>
+        {showCheckoutForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setShowCheckoutForm(false)}
+                className="absolute top-4 right-4 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"
+              >
+                <X size={18} className="text-gray-400" />
+              </button>
+
+              <div className="flex flex-col items-center text-center mb-4 mt-1">
+                <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mb-2 text-primary">
+                  <ShoppingBag size={24} />
+                </div>
+                <h2 className="font-title text-2xl text-dark leading-none mb-1">Datos de Entrega</h2>
+                <p className="text-xs text-gray-500">Ingresa tus datos para procesar el pedido vía WhatsApp</p>
+              </div>
+
+              <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">¿Quién recibe el pedido? *</label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-3.5 top-3 text-gray-400" />
+                    <input
+                      required
+                      type="text"
+                      value={customerData.nombre}
+                      onChange={e => setCustomerData({ ...customerData, nombre: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Tu nombre completo"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Dirección / Referencia *</label>
+                  <div className="relative">
+                    <MapPin size={16} className="absolute left-3.5 top-3 text-gray-400" />
+                    <input
+                      required
+                      type="text"
+                      value={customerData.direccion}
+                      onChange={e => setCustomerData({ ...customerData, direccion: e.target.value })}
+                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                      placeholder="Ej: Jr. Callao 123 / Frente al parque"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Ubicación GPS (Opcional)</label>
+                  <button
+                    type="button"
+                    onClick={handleGetLocation}
+                    disabled={isGettingLocation}
+                    className={`w-full py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                      locationSuccess
+                        ? 'bg-green-50 border-green-200 text-green-700'
+                        : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
+                    }`}
+                  >
+                    {isGettingLocation ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Obteniendo GPS...</span>
+                      </>
+                    ) : locationSuccess ? (
+                      <>
+                        <CheckCircle size={16} className="text-green-600" />
+                        <span>✓ Ubicación GPS Agregada</span>
+                      </>
+                    ) : (
+                      <>
+                        <Navigation size={16} />
+                        <span>Obtener mi ubicación por GPS</span>
+                      </>
+                    )}
+                  </button>
+                  {locationError && (
+                    <p className="text-[10px] text-red-500 mt-1 ml-1 font-medium">{locationError}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Medio de Pago *</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'Yape', label: 'Yape / Plin', icon: Smartphone },
+                      { id: 'Tarjeta', label: 'Tarjeta (Visa)', icon: CreditCard },
+                      { id: 'Efectivo', label: 'Efectivo', icon: DollarSign }
+                    ].map(item => {
+                      const IconComp = item.icon;
+                      const selected = customerData.medioPago === item.id;
+                      return (
+                        <button
+                          type="button"
+                          key={item.id}
+                          onClick={() => setCustomerData({ ...customerData, medioPago: item.id as any })}
+                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
+                            selected
+                              ? 'bg-primary text-white border-primary shadow-sm font-bold'
+                              : 'bg-gray-50 border-gray-100 text-dark hover:border-gray-300'
+                          }`}
+                        >
+                          <IconComp size={18} className="mb-1" />
+                          <span className="text-[11px] leading-tight">{item.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {customerData.medioPago === 'Efectivo' && (
+                    <div className="mt-2">
+                      <input
+                        type="text"
+                        value={customerData.montoEfectivo}
+                        onChange={e => setCustomerData({ ...customerData, montoEfectivo: e.target.value })}
+                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-primary/50"
+                        placeholder="¿Con cuánto dinero cancelas? (Ej: 50 o 100)"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#25D366] text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 mt-3"
+                >
+                  <span>Enviar Pedido a WhatsApp</span>
+                  <ChevronRight size={18} />
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Modal */}
       <AnimatePresence>
         {selectedImage && (
           <motion.div
@@ -560,6 +791,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Birthday Modal */}
       <AnimatePresence>
         {showBirthdayForm && (
           <motion.div
@@ -629,6 +861,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Review Modal */}
       <AnimatePresence>
         {showReviewForm && (
           <motion.div
