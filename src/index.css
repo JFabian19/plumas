@@ -1,39 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Fredoka:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* TIPOGRAFÍAS DE RESTAURANT & CEVICHERÍA ARJA */
-  --font-sans: "Barlow Condensed", system-ui, -apple-system, sans-serif;
-  --font-title: "Fredoka", sans-serif;       /* Fredoka Bold 700 para Títulos y Categorías */
-  --font-category: "Fredoka", sans-serif;    /* Fredoka para Categorías */
-  --font-dish: "Barlow Condensed", sans-serif;/* Barlow Condensed para platos, descripciones y precios */
-  --font-slogan: "Barlow Condensed", sans-serif;/* Barlow Condensed para eslogans/marquee */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-title: "Syne", sans-serif;
+  --font-serif: "Playfair Display", serif;
   
-  /* COLORES DE RESTAURANT & CEVICHERÍA ARJA */
-  --color-primary: #1597A5;      /* Turquesa marino */
-  --color-secondary: #E9B936;    /* Amarillo / Dorado */
-  --color-dark: #23464A;         /* Verde petróleo / oscuro */
-  --color-light: #F5F1DF;        /* Fondo Crema marfil */
-  --color-accent: #C93663;       /* Fucsia marino */
-  
-  --shadow-glass: 0 8px 32px 0 rgba(21, 151, 165, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.95);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --color-brand-black: #0b0f17;
+  --color-brand-dark: #121826;
+  --color-brand-card: #1a2234;
+  --color-brand-border: #2a364f;
+  --color-brand-gold: #e5b95c;
+  --color-brand-gold-dark: #b88a32;
+  --color-brand-denim: #2563eb;
+  --color-brand-denim-dark: #1d4ed8;
 }
 
 body {
-  background-color: var(--color-light);
-  color: var(--color-dark);
+  background-color: #0b0f17;
+  color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
   font-family: var(--font-sans);
 }
 
-.glass {
-  background: var(--glass-bg);
+.glass-dark {
+  background: rgba(18, 24, 38, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-glass);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(26, 34, 52, 0.9) 0%, rgba(18, 24, 38, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #fef08a 0%, #e5b95c 50%, #b88a32 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #fef08a 0%, #e5b95c 50%, #b88a32 100%);
+}
+
+.border-gold-glow {
+  box-shadow: 0 0 15px rgba(229, 185, 92, 0.2);
 }
 
 @keyframes marquee {
@@ -42,12 +56,11 @@ body {
 }
 
 .animate-marquee {
-  animation: marquee 30s linear infinite;
+  animation: marquee 25s linear infinite;
   display: flex;
   width: max-content;
 }
 
-/* Custom scrollbar hide */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -56,40 +69,14 @@ body {
   scrollbar-width: none;
 }
 
-.shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
+/* Shimmer effect for buttons & badges */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
-/* Wave decoration for sections */
-@keyframes wave {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-4px) rotate(2deg); }
-}
-
-.wave-icon {
-  animation: wave 3s ease-in-out infinite;
-  display: inline-block;
-}
-
-/* Category header underline animation */
-.category-underline {
-  position: relative;
-}
-
-.category-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
-  border-radius: 2px;
+.shimmer-badge {
+  background: linear-gradient(90deg, rgba(229,185,92,0.1), rgba(229,185,92,0.3), rgba(229,185,92,0.1));
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
 }

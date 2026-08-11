@@ -1,953 +1,1240 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { ShoppingBag, Plus, Minus, ChevronRight, X, Trash2, Utensils, Facebook, MapPin, Loader2, Gift, Star, Navigation, CreditCard, DollarSign, User, CheckCircle, Smartphone } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { 
+  ShoppingBag, Plus, Minus, X, Trash2, Search, Sparkles, Filter, 
+  Ruler, Truck, ShieldCheck, MapPin, CheckCircle, Smartphone, 
+  ExternalLink, ChevronRight, Heart, Star, Tag, RefreshCw, Eye, MessageCircle
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { fetchSheetData, submitSheetData, SheetDish, SheetCategory, SHEET_ID } from './services/googleSheets';
-import { DEFAULT_MENU_DATA } from './data/menuData';
-
-// ==========================================
-// 📋 CONFIGURACIÓN DE RESTAURANT & CEVICHERÍA ARJA
-// ==========================================
-const RESTAURANTE_NAME = "Restaurant & Cevichería Arja";
-const RESTAURANTE_SLOGAN = "Seducción Marina";
-const RESTAURANTE_ADDRESS = "Jr. 28 de Julio # 274";
-const WHATSAPP_NUMBER = "51991166220";
-const FACEBOOK_URL = "";
-const MAPS_URL = "https://www.google.com/maps/search/?api=1&query=Jr.+28+de+Julio+274";
-const LOGO_FOOTER_PATH = "";
-const BANNER_PATH = "";
-const MARQUEE_TEXT = "🐟 SEDUCCIÓN MARINA EN CADA BOCADO • CEVICHES, LECHES DE TIGRE Y DÚOS BIEN SERVIDOS • ¡TODOS CON CHILCANO DE CORTESÍA! 🌊🍋 ";
-// ==========================================
-
-const LOCAL_IMAGES: Record<string, string> = {};
-
-interface Dish {
-  nombre: string;
-  descripcion?: string;
-  imagen?: string;
-  precio: string;
-}
-
-interface Category {
-  id: string;
-  nombre: string;
-  items: Dish[];
-}
+import { 
+  JEANS_PRODUCTS, JeansProduct, ColorVariant, LOGO_IMAGE, 
+  SHOWCASE_MODEL_IMAGE, MARQUEE_ANNOUNCEMENT, STORE_INFO 
+} from './data/jeansData';
 
 interface CartItem {
-  nombre: string;
-  precio: string;
+  id: string; // product id + color + size
+  product: JeansProduct;
+  color: ColorVariant;
+  talla: number;
   cantidad: number;
 }
 
 export default function App() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [showSummary, setShowSummary] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // Filters state
+  const [selectedBrand, setSelectedBrand] = useState<string>('Todas');
+  const [selectedFit, setSelectedFit] = useState<string>('Todos');
+  const [selectedColorFilter, setSelectedColorFilter] = useState<string>('Todos');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Checkout and Delivery state
-  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  // Selected Active Color per product id (for quick card swatch switching)
+  const [activeCardColors, setActiveCardColors] = useState<Record<string, ColorVariant>>({});
+  // Selected Active View per product id ('product' | 'poster')
+  const [activeCardViews, setActiveCardViews] = useState<Record<string, 'product' | 'poster'>>({});
+
+  // Product detail modal state
+  const [detailProduct, setDetailProduct] = useState<JeansProduct | null>(null);
+  const [modalColor, setModalColor] = useState<ColorVariant | null>(null);
+  const [modalSize, setModalSize] = useState<number>(30);
+
+  // Cart & Checkout drawer state
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [showCartDrawer, setShowCartDrawer] = useState<boolean>(false);
+  const [showSizeGuide, setShowSizeGuide] = useState<boolean>(false);
+  const [showCheckoutForm, setShowCheckoutForm] = useState<boolean>(false);
+
+  // Quick Notification Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Customer Checkout Form
   const [customerData, setCustomerData] = useState({
     nombre: '',
+    telefono: '',
+    ciudad: '',
     direccion: '',
-    gpsUrl: '',
-    medioPago: 'Yape' as 'Yape' | 'Tarjeta' | 'Efectivo',
-    montoEfectivo: ''
+    metodoEntrega: 'Envío a Domicilio (Lima / Provincias)',
+    medioPago: 'Yape / Plin',
+    notas: ''
   });
+
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [locationSuccess, setLocationSuccess] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
 
-  // States for Birthday Form
-  const [showBirthdayForm, setShowBirthdayForm] = useState(false);
-  const [isSubmittingBirthday, setIsSubmittingBirthday] = useState(false);
-  const [birthdaySuccess, setBirthdaySuccess] = useState(false);
-  const [birthdayData, setBirthdayData] = useState({
-    nombre: '',
-    telefono: '',
-    fechaNacimiento: '',
-    distrito: '',
-    correo: ''
-  });
-
-  // States for Review Form
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviewData, setReviewData] = useState({
-    estrellasMozo: 0,
-    estrellasComida: 0,
-    comentario: ''
-  });
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        if (!SHEET_ID) {
-          setCategories(DEFAULT_MENU_DATA);
-          if (DEFAULT_MENU_DATA.length > 0) {
-            setActiveCategory(DEFAULT_MENU_DATA[0].id);
-          }
-          return;
-        }
-
-        const [cats, dishes] = await Promise.all([
-          fetchSheetData<SheetCategory>('Categorías'),
-          fetchSheetData<SheetDish>('Platos')
-        ]);
-
-        if (cats.length === 0 && dishes.length === 0) {
-          setCategories(DEFAULT_MENU_DATA);
-          if (DEFAULT_MENU_DATA.length > 0) {
-            setActiveCategory(DEFAULT_MENU_DATA[0].id);
-          }
-          return;
-        }
-
-        const formattedCategories: Category[] = cats.map(c => ({
-          id: c.nombre.toLowerCase().replace(/\s+/g, '-'),
-          nombre: c.nombre,
-          items: dishes
-            .filter(d => d.categoría === c.nombre)
-            .map(d => ({
-              nombre: d['nombre del plato'],
-              descripcion: d.descripción,
-              precio: d.precio,
-              imagen: LOCAL_IMAGES[d['nombre del plato']] || d['URL de imagen'] || null
-            }))
-        }));
-
-        setCategories(formattedCategories);
-        if (formattedCategories.length > 0) {
-          setActiveCategory(formattedCategories[0].id);
-        }
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setCategories(DEFAULT_MENU_DATA);
-        if (DEFAULT_MENU_DATA.length > 0) {
-          setActiveCategory(DEFAULT_MENU_DATA[0].id);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  const cartCount = useMemo(() => cart.reduce((acc, item) => acc + item.cantidad, 0), [cart]);
-
-  const addToCart = (dish: Dish) => {
-    setCart(prev => {
-      const existing = prev.find(i => i.nombre === dish.nombre && i.precio === dish.precio);
-      if (existing) {
-        return prev.map(i =>
-          (i.nombre === dish.nombre && i.precio === dish.precio)
-            ? { ...i, cantidad: i.cantidad + 1 }
-            : i
-        );
-      }
-      return [...prev, { nombre: dish.nombre, precio: dish.precio, cantidad: 1 }];
-    });
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
   };
 
-  const updateQuantity = (nombre: string, precio: string, delta: number) => {
+  // Helper to get active color for a product card
+  const getActiveColor = (product: JeansProduct): ColorVariant => {
+    return activeCardColors[product.id] || product.colores[0];
+  };
+
+  // Helper to set active color for a product card
+  const handleSelectCardColor = (productId: string, color: ColorVariant) => {
+    setActiveCardColors(prev => ({ ...prev, [productId]: color }));
+  };
+
+  // Helper to toggle image view ('product' or 'poster')
+  const handleToggleCardView = (productId: string) => {
+    setActiveCardViews(prev => ({
+      ...prev,
+      [productId]: prev[productId] === 'poster' ? 'product' : 'poster'
+    }));
+  };
+
+  // Extract all unique brands, fits, and colors for filter chips
+  const brandsList = ['Todas', 'Lois', 'Element', 'Pionier', 'Bronco'];
+  const fitsList = ['Todos', 'Slim Fit', 'Semi Pitillo', 'MOM Jeans', 'Corte Clásico'];
+
+  const allColorsList = useMemo(() => {
+    const colorsSet = new Set<string>();
+    JEANS_PRODUCTS.forEach(p => p.colores.forEach(c => colorsSet.add(c.nombre)));
+    return ['Todos', ...Array.from(colorsSet)];
+  }, []);
+
+  // Filtered Jeans List
+  const filteredProducts = useMemo(() => {
+    return JEANS_PRODUCTS.filter(product => {
+      // Brand filter
+      if (selectedBrand !== 'Todas' && product.marca !== selectedBrand) {
+        return false;
+      }
+      // Fit filter
+      if (selectedFit !== 'Todos' && product.corte !== selectedFit) {
+        return false;
+      }
+      // Color filter
+      if (selectedColorFilter !== 'Todos') {
+        const hasColor = product.colores.some(c => c.nombre.toLowerCase() === selectedColorFilter.toLowerCase());
+        if (!hasColor) return false;
+      }
+      // Search Query
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase();
+        const matchesName = product.nombreCompleto.toLowerCase().includes(q);
+        const matchesBrand = product.marca.toLowerCase().includes(q);
+        const matchesFit = product.corte.toLowerCase().includes(q);
+        const matchesColor = product.colores.some(c => c.nombre.toLowerCase().includes(q));
+        if (!matchesName && !matchesBrand && !matchesFit && !matchesColor) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [selectedBrand, selectedFit, selectedColorFilter, searchQuery]);
+
+  // Cart operations
+  const addToCart = (product: JeansProduct, color: ColorVariant, talla: number, cantidad: number = 1) => {
+    const itemKey = `${product.id}-${color.nombre}-${talla}`;
+    setCart(prev => {
+      const existing = prev.find(item => item.id === itemKey);
+      if (existing) {
+        return prev.map(item =>
+          item.id === itemKey ? { ...item, cantidad: item.cantidad + cantidad } : item
+        );
+      }
+      return [...prev, { id: itemKey, product, color, talla, cantidad }];
+    });
+    triggerToast(`¡Agregado ${product.modelo} (${color.nombre} - Talla ${talla}) a tu pedido!`);
+  };
+
+  const updateCartQty = (id: string, delta: number) => {
     setCart(prev =>
       prev
-        .map(i => {
-          if (i.nombre === nombre && i.precio === precio) {
-            const newQty = i.cantidad + delta;
-            return newQty > 0 ? { ...i, cantidad: newQty } : null;
+        .map(item => {
+          if (item.id === id) {
+            const newQty = item.cantidad + delta;
+            return newQty > 0 ? { ...item, cantidad: newQty } : null;
           }
-          return i;
+          return item;
         })
         .filter(Boolean) as CartItem[]
     );
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((acc, item) => {
-      const cleanPrice = item.precio.replace(/^[^\d]*/, '');
-      const num = parseFloat(cleanPrice) || 0;
-      return acc + num * item.cantidad;
-    }, 0);
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.id !== id));
   };
 
+  const cartTotalCount = useMemo(() => cart.reduce((acc, i) => acc + i.cantidad, 0), [cart]);
+
+  const cartTotalPrice = useMemo(() => cart.reduce((acc, i) => acc + (i.product.precio * i.cantidad), 0), [cart]);
+
+  // Geolocation Handler
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      setLocationError("Tu navegador no soporta geolocalización por GPS.");
+      alert("Tu navegador no soporta geolocalización por GPS.");
       return;
     }
     setIsGettingLocation(true);
-    setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         const url = `https://maps.google.com/?q=${lat},${lng}`;
-        setCustomerData(prev => ({ ...prev, gpsUrl: url }));
+        setCustomerData(prev => ({ ...prev, direccion: `${prev.direccion} [Ubicación GPS: ${url}]`.trim() }));
         setIsGettingLocation(false);
         setLocationSuccess(true);
+        triggerToast("¡Ubicación GPS capturada con éxito!");
       },
-      (error) => {
-        console.error(error);
+      (err) => {
+        console.error(err);
         setIsGettingLocation(false);
-        setLocationError("No se pudo obtener la ubicación. Por favor activa el GPS de tu dispositivo.");
+        alert("No se pudo obtener la ubicación GPS automáticamente. Por favor escribe tu dirección.");
       },
-      { enableHighAccuracy: true, timeout: 12000 }
+      { timeout: 10000, enableHighAccuracy: true }
     );
   };
 
-  const handleCheckoutSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerData.nombre.trim()) {
-      alert("Por favor ingresa tu nombre.");
-      return;
-    }
+  // WhatsApp Single Item Order
+  const handleDirectWhatsAppOrder = (product: JeansProduct, color: ColorVariant, talla: number) => {
+    const message = `${STORE_INFO.mensajeWhatsAppBase}
+👖 *${product.nombreCompleto}*
+🎨 Color: *${color.nombre}*
+📐 Talla: *${talla}*
+💰 Precio: *S/ ${product.precio.toFixed(2)}*
 
-    const total = calculateTotal();
-    let message = `*¡Hola ${RESTAURANTE_NAME}! Deseo realizar un pedido:*\n\n`;
+¿Tienen stock disponible para envío inmediato?`;
 
-    message += `👤 *DATOS PARA LA ENTREGA*\n`;
-    message += `• *Nombre:* ${customerData.nombre.trim()}\n`;
-    message += `• *Dirección / Ref:* ${customerData.direccion.trim() || 'Entrega en local'}\n`;
-    if (customerData.gpsUrl) {
-      message += `• *Ubicación GPS:* ${customerData.gpsUrl}\n`;
-    }
-    message += `• *Medio de Pago:* ${customerData.medioPago}${customerData.medioPago === 'Efectivo' && customerData.montoEfectivo ? ` (Paga con S/.${customerData.montoEfectivo})` : ''}\n\n`;
-
-    message += `🛒 *DETALLE DEL PEDIDO*\n`;
-    cart.forEach(item => {
-      message += `• ${item.cantidad} x ${item.nombre} (${item.precio})\n`;
-    });
-
-    message += `\n*TOTAL A PAGAR: S/.${total.toFixed(2)}*`;
-
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encodedMsg}`, '_blank');
   };
 
-  const scrollToCategory = (catId: string) => {
-    setActiveCategory(catId);
-    const el = document.getElementById(`cat-${catId}`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  // WhatsApp Cart Order Checkout
+  const handleSendCartToWhatsApp = () => {
+    if (cart.length === 0) return;
 
-  const handleBirthdaySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmittingBirthday(true);
-    const success = await submitSheetData('Cumpleaños', {
-      timestamp: new Date().toLocaleString('es-PE'),
-      nombre: birthdayData.nombre,
-      telefono: birthdayData.telefono,
-      fechaNacimiento: birthdayData.fechaNacimiento,
-      distrito: birthdayData.distrito,
-      correo: birthdayData.correo || 'No indicado'
-    });
-    
-    setIsSubmittingBirthday(false);
-    if (success) {
-      setBirthdaySuccess(true);
-      setTimeout(() => {
-        setShowBirthdayForm(false);
-        setBirthdaySuccess(false);
-        setBirthdayData({ nombre: '', telefono: '', fechaNacimiento: '', distrito: '', correo: '' });
-      }, 3000);
-    } else {
-      alert("Hubo un error al enviar tus datos. Por favor, inténtalo de nuevo.");
-    }
-  };
+    let itemsText = cart.map((item, idx) => {
+      return `${idx + 1}. *${item.product.nombreCompleto}*
+   • Color: ${item.color.nombre} | Talla: ${item.talla}
+   • Cantidad: ${item.cantidad} x S/ ${item.product.precio.toFixed(2)} = S/ ${(item.product.precio * item.cantidad).toFixed(2)}`;
+    }).join('\n\n');
 
-  const handleReviewSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (reviewData.estrellasMozo === 0 || reviewData.estrellasComida === 0) {
-      alert("Por favor califica ambas opciones con estrellas.");
-      return;
+    let customerDetails = `
+📝 *DATOS DEL CLIENTE:*
+• Nombre: ${customerData.nombre || 'No especificado'}
+• Teléfono: ${customerData.telefono || 'No especificado'}
+• Ciudad / Destino: ${customerData.ciudad || 'No especificado'}
+• Dirección: ${customerData.direccion || 'Por acordar'}
+• Método de Entrega: ${customerData.metodoEntrega}
+• Pago Preferido: ${customerData.medioPago}`;
+
+    if (customerData.notas) {
+      customerDetails += `\n• Notas / Indicaciones: ${customerData.notas}`;
     }
 
-    setIsSubmittingReview(true);
-    const success = await submitSheetData('Reseñas', {
-      timestamp: new Date().toLocaleString('es-PE'),
-      estrellasMozo: reviewData.estrellasMozo,
-      estrellasComida: reviewData.estrellasComida,
-      comentario: reviewData.comentario || 'Sin comentarios'
-    });
-    
-    setIsSubmittingReview(false);
-    if (success) {
-      setReviewSuccess(true);
-      setTimeout(() => {
-        setShowReviewForm(false);
-        setReviewSuccess(false);
-        setReviewData({ estrellasMozo: 0, estrellasComida: 0, comentario: '' });
-      }, 3000);
-    } else {
-      alert("Hubo un error al enviar tu reseña. Por favor, inténtalo de nuevo.");
-    }
-  };
+    const fullMessage = `🪶 *NUEVO PEDIDO - PLUMAS JEANS* 🪶
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-        <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-        <p className="font-slogan text-primary font-bold tracking-widest uppercase text-xs">Cargando delicias...</p>
-      </div>
-    );
-  }
+${itemsText}
+
+💵 *TOTAL DEL PEDIDO: S/ ${cartTotalPrice.toFixed(2)}*
+${customerDetails}
+
+Quedo a la espera de sus datos para proceder con el pago y envío. ¡Gracias!`;
+
+    const encoded = encodeURIComponent(fullMessage);
+    window.open(`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encoded}`, '_blank');
+  };
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl overflow-hidden flex flex-col font-sans">
-      <header className="sticky top-0 bg-white/95 backdrop-blur-md z-50 px-5 py-4 flex justify-between items-center border-b border-gray-100">
-        <div className="flex flex-col items-start">
-          <h1 className="font-title text-[26px] text-primary leading-none tracking-wide">{RESTAURANTE_NAME}</h1>
-          <span className="font-slogan text-[11px] text-secondary font-bold tracking-wider mt-0.5">{RESTAURANTE_SLOGAN}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          {FACEBOOK_URL && (
-            <motion.a
-              href={FACEBOOK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center text-primary cursor-pointer"
-            >
-              <Facebook size={22} />
-            </motion.a>
-          )}
-          {MAPS_URL && (
-            <motion.a
-              href={MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileTap={{ scale: 0.95 }}
-              className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center text-primary cursor-pointer"
-              title={RESTAURANTE_ADDRESS}
-            >
-              <MapPin size={22} />
-            </motion.a>
-          )}
+    <div className="min-h-screen bg-[#0b0f17] text-slate-100 font-sans selection:bg-amber-500 selection:text-black">
+
+      {/* 🚀 TOAST NOTIFICATION */}
+      <AnimatePresence>
+        {toastMessage && (
           <motion.div
-            onClick={() => cartCount > 0 && setShowSummary(true)}
-            whileTap={{ scale: 0.95 }}
-            className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center relative cursor-pointer"
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            className="fixed top-20 right-4 z-50 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-amber-300/40"
           >
-            <ShoppingBag size={22} className="text-primary" />
-            {cartCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 bg-secondary text-white rounded-full text-[10px] font-bold flex items-center justify-center px-1">
-                {cartCount}
-              </span>
-            )}
+            <Sparkles className="w-5 h-5 animate-spin" />
+            <span>{toastMessage}</span>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 📢 DYNAMIC ANNOUNCEMENT MARQUEE */}
+      <div className="bg-gradient-to-r from-slate-950 via-amber-950/40 to-slate-950 border-b border-amber-500/20 py-2.5 overflow-hidden text-xs font-medium tracking-wide text-amber-200/90">
+        <div className="animate-marquee whitespace-nowrap flex items-center">
+          <span className="mx-6 font-semibold">{MARQUEE_ANNOUNCEMENT}</span>
+          <span className="mx-6 font-semibold">{MARQUEE_ANNOUNCEMENT}</span>
+        </div>
+      </div>
+
+      {/* 🌟 HEADER / NAVBAR */}
+      <header className="sticky top-0 z-40 glass-dark border-b border-slate-800/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
+          
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-3">
+            <img 
+              src={LOGO_IMAGE} 
+              alt="Plumas Jeans Logo" 
+              className="h-11 sm:h-12 w-auto object-contain rounded-lg border border-amber-500/30 p-1 bg-black/60 shadow-lg shadow-amber-500/10"
+            />
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight font-title text-gold-gradient leading-none">
+                PLUMAS JEANS
+              </h1>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-medium tracking-wider uppercase">
+                Denim Store & Catálogo Digital
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Actions & Cart Trigger */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
+            {/* Guía de Tallas Button */}
+            <button
+              onClick={() => setShowSizeGuide(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-all shadow-sm"
+            >
+              <Ruler className="w-4 h-4 text-amber-400" />
+              <span>Guía de Tallas</span>
+            </button>
+
+            {/* Direct WhatsApp Contact */}
+            <a
+              href={`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encodeURIComponent(STORE_INFO.mensajeWhatsAppBase)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden md:flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 transition-all"
+            >
+              <Smartphone className="w-4 h-4 text-emerald-400" />
+              <span>WhatsApp Directo</span>
+            </a>
+
+            {/* Shopping Cart Drawer Trigger */}
+            <button
+              onClick={() => setShowCartDrawer(true)}
+              className="relative flex items-center gap-2.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all transform active:scale-95"
+            >
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Mi Pedido</span>
+              {cartTotalCount > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-slate-950 text-amber-400 text-xs font-extrabold border border-amber-400/40">
+                  {cartTotalCount}
+                </span>
+              )}
+            </button>
+
+          </div>
         </div>
       </header>
 
-      {/* Address Banner */}
-      <div className="bg-primary/10 border-b border-primary/20 px-5 py-2 flex items-center justify-between text-[12px] font-bold text-dark">
-        <div className="flex items-center gap-1.5 truncate">
-          <MapPin size={15} className="text-primary shrink-0 animate-bounce" />
-          <span className="truncate">📍 {RESTAURANTE_ADDRESS}</span>
-        </div>
-        <a href={MAPS_URL} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-[10px] uppercase font-extrabold shrink-0 ml-2">
-          Ver mapa
-        </a>
-      </div>
+      {/* 👑 HERO SECTION WITH EXCLUSIVE BRANDING */}
+      <section className="relative overflow-hidden py-10 sm:py-16 bg-gradient-to-b from-slate-950 via-[#101726] to-[#0b0f17] border-b border-slate-800/60">
+        
+        {/* Decorative Background Feather Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full bg-primary py-2 overflow-hidden flex items-center">
-        <div className="animate-marquee flex gap-6 text-white font-slogan font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
-          {[...Array(10)].map((_, i) => (
-            <span key={i}>{MARQUEE_TEXT}</span>
-          ))}
-        </div>
-      </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Hero Text */}
+            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider shimmer-badge">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Colección Premium Denim 2026</span>
+              </div>
 
-      <div className="px-5 pt-4">
-        <motion.button 
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
-          animate={{ 
-            boxShadow: ["0px 0px 0px 0px rgba(233,185,54,0.6)", "0px 0px 20px 8px rgba(233,185,54,0)", "0px 0px 0px 0px rgba(233,185,54,0)"] 
-          }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
-          onClick={() => setShowBirthdayForm(true)}
-          className="w-full bg-gradient-to-r from-yellow-500 via-secondary to-amber-500 text-white py-3 px-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-[10px] sm:text-[11px] uppercase tracking-wide border border-yellow-400 relative overflow-hidden group text-center"
-        >
-          <div className="absolute inset-0 shimmer opacity-30 mix-blend-overlay"></div>
-          <Gift size={18} className="animate-bounce shrink-0 text-white" />
-          <span className="font-bold">🎉 ¡Registra tu cumpleaños y recibe una deliciosa sorpresa marina de Cevichería Arja! 🐟🍋🎁</span>
-        </motion.button>
-      </div>
+              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black font-title tracking-tight text-slate-100 leading-tight">
+                EL ESTILO DEL JEANS <br />
+                <span className="text-gold-gradient font-serif italic font-normal">hecho a tu medida.</span>
+              </h2>
 
-      <div className="px-5 pt-4 pb-3">
-        <div className="relative w-full rounded-3xl overflow-hidden shadow-xl aspect-[2/1] bg-gradient-to-br from-primary/10 to-secondary/15 flex flex-col items-center justify-center text-center p-4 border border-dashed border-primary/20">
-          <p className="font-dish font-bold text-primary text-sm uppercase tracking-wider">
-            aca va a imagen
-          </p>
-        </div>
-      </div>
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                Descubre nuestra selección exclusiva de marcas líderes: <strong className="text-slate-100 font-semibold">Lois Originals, Element, Pionier y Bronco</strong>. 
+                Revisa colores, cortes y tallas en este catálogo interactivo y haz tu pedido directo a nuestro WhatsApp en 1 click.
+              </p>
 
-      <div className="px-5 py-3 overflow-x-auto no-scrollbar">
-        <div className="flex gap-2 w-max">
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => scrollToCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-[11px] font-category font-semibold whitespace-nowrap transition-all duration-200 border
-                ${activeCategory === cat.id
-                  ? 'bg-primary text-white border-primary shadow-md shadow-primary/20'
-                  : 'bg-white text-dark border-gray-200 hover:border-primary/40 hover:text-primary'
-                }`}
-            >
-              {cat.nombre}
-            </button>
-          ))}
-        </div>
-      </div>
+              {/* Stats badges */}
+              <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto lg:mx-0">
+                <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-center">
+                  <span className="block text-xl font-bold font-title text-amber-400">4</span>
+                  <span className="text-[11px] text-slate-400 uppercase font-medium">Marcas Top</span>
+                </div>
+                <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-center">
+                  <span className="block text-xl font-bold font-title text-blue-400">25+</span>
+                  <span className="text-[11px] text-slate-400 uppercase font-medium">Tonalidades</span>
+                </div>
+                <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-center">
+                  <span className="block text-xl font-bold font-title text-emerald-400">100%</span>
+                  <span className="text-[11px] text-slate-400 uppercase font-medium">Algodón Premium</span>
+                </div>
+                <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-center">
+                  <span className="block text-xl font-bold font-title text-amber-400">Nacional</span>
+                  <span className="text-[11px] text-slate-400 uppercase font-medium">Envíos a todo el Perú</span>
+                </div>
+              </div>
 
-      <main className="flex-1 overflow-y-auto pb-32 px-5">
-        {categories.map(cat => (
-          <section key={cat.id} id={`cat-${cat.id}`} className="mb-10 scroll-mt-28">
-            <div className="mb-5 pt-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Utensils className="text-primary wave-icon" size={22} />
-                <h3 className="font-category font-semibold text-primary text-[26px] leading-none tracking-wide category-underline">
-                  {cat.nombre}
-                </h3>
+              {/* Action buttons */}
+              <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                <a
+                  href="#catalogo"
+                  className="px-6 py-3 rounded-xl bg-gold-gradient text-slate-950 font-bold text-sm shadow-xl shadow-amber-500/20 hover:brightness-110 transition-all flex items-center gap-2"
+                >
+                  <span>Explorar Catálogo</span>
+                  <ChevronRight className="w-4 h-4" />
+                </a>
+
+                <button
+                  onClick={() => setShowSizeGuide(true)}
+                  className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold text-sm border border-slate-700 transition-all flex items-center gap-2"
+                >
+                  <Ruler className="w-4 h-4 text-amber-400" />
+                  <span>Ver Guía de Cortes & Tallas</span>
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {cat.items.map((dish, idx) => (
-                <motion.div
-                  key={idx}
-                  whileHover={{ y: -4 }}
-                  className="bg-white rounded-[2rem] overflow-hidden flex flex-col shadow-sm border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all duration-200"
+            {/* Right Hero Image Card */}
+            <div className="lg:col-span-5 relative flex justify-center">
+              <div className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden glass-card p-3 border border-amber-500/30 shadow-2xl shadow-amber-500/10 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                <img 
+                  src={SHOWCASE_MODEL_IMAGE} 
+                  alt="Plumas Jeans Lookbook Showcase" 
+                  className="w-full h-80 sm:h-96 object-cover object-top rounded-xl"
+                />
+                <div className="absolute inset-x-3 bottom-3 p-4 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent rounded-b-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest block">Lookbook Denim 2026</span>
+                    <span className="text-sm font-semibold text-slate-100">Tendencia Urbana & Confort</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 text-xs font-extrabold">
+                    PREMIUM
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 🔍 CATALOG SEARCH & FILTERS SECTION */}
+      <section id="catalogo" className="py-8 bg-[#0e1422] border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          
+          {/* Section Heading & Search bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-2xl sm:text-3xl font-extrabold font-title text-slate-100 flex items-center gap-2">
+                <span>CATÁLOGO DE PRODUCTOS</span>
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 text-amber-400 border border-slate-700">
+                  {filteredProducts.length} Modelos
+                </span>
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400">
+                Filtra por tu marca preferida, tipo de corte o tonalidad de jeans.
+              </p>
+            </div>
+
+            {/* Live Search Bar */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por marca, color, corte..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-amber-500/80 transition-all shadow-inner"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                 >
-                  <div className="bg-primary/5 aspect-square flex items-center justify-center relative overflow-hidden p-4 border-b border-gray-100">
-                    <span className="font-dish font-bold text-[11px] text-primary uppercase tracking-wider text-center">
-                      aca va a imagen
-                    </span>
-                  </div>
-                  
-                  <div className="p-4 flex flex-col flex-1">
-                    <h4 className="font-dish font-bold text-dark text-[13px] leading-tight mb-1">
-                      {dish.nombre}
-                    </h4>
-                    {dish.descripcion && (
-                      <p className="text-[10px] text-gray-400 leading-tight mb-2 line-clamp-3">
-                        {dish.descripcion}
-                      </p>
-                    )}
-                    <div className="flex-1"></div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="font-dish font-bold text-primary text-[16px] whitespace-nowrap">
-                        {dish.precio}
-                      </span>
-                      <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        onClick={() => addToCart(dish)}
-                        className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary transition-colors duration-200 shrink-0"
-                      >
-                        <Plus size={16} strokeWidth={3} />
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Filter Chips Container */}
+          <div className="space-y-4 pt-2">
+            
+            {/* Brand Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                <Tag className="w-3.5 h-3.5" /> Marca:
+              </span>
+              {brandsList.map(brand => (
+                <button
+                  key={brand}
+                  onClick={() => setSelectedBrand(brand)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 border ${
+                    selectedBrand === brand
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                      : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800'
+                  }`}
+                >
+                  {brand}
+                </button>
               ))}
             </div>
-          </section>
-        ))}
 
-        <section className="mt-8 mb-4 border border-gray-100 bg-gray-50 rounded-3xl p-5 text-center shadow-sm">
-          <h3 className="font-title text-primary text-[22px] leading-tight mb-2">¿Cómo estuvo todo?</h3>
-          <p className="text-[11px] text-gray-500 mb-4 px-4">Ayúdanos a mejorar calificando tu experiencia con nosotros</p>
-          <motion.button 
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowReviewForm(true)}
-            className="bg-primary text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-md shadow-primary/20 flex items-center justify-center gap-2 mx-auto w-full"
-          >
-            <Star size={18} className="fill-white" />
-            Reseña nuestra comida
-          </motion.button>
-        </section>
+            {/* Fit / Corte Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                <Filter className="w-3.5 h-3.5" /> Corte:
+              </span>
+              {fitsList.map(fit => (
+                <button
+                  key={fit}
+                  onClick={() => setSelectedFit(fit)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 border ${
+                    selectedFit === fit
+                      ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/20 font-semibold'
+                      : 'bg-slate-900/80 hover:bg-slate-800 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  {fit}
+                </button>
+              ))}
+            </div>
 
-        <footer className="mt-8 pt-8 pb-10 border-t border-gray-200 flex flex-col items-center justify-center text-center px-4">
-          <p className="font-title text-2xl text-primary mb-1">{RESTAURANTE_NAME}</p>
-          <p className="font-slogan text-xs text-secondary font-bold mb-3">{RESTAURANTE_SLOGAN}</p>
+            {/* Color Swatch Filter */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider shrink-0 mr-1">
+                Color:
+              </span>
+              {allColorsList.map(colorName => (
+                <button
+                  key={colorName}
+                  onClick={() => setSelectedColorFilter(colorName)}
+                  className={`px-3 py-1 rounded-md text-xs transition-all shrink-0 border ${
+                    selectedColorFilter === colorName
+                      ? 'bg-slate-100 text-slate-950 font-bold border-white'
+                      : 'bg-slate-900/60 hover:bg-slate-800 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  {colorName}
+                </button>
+              ))}
+            </div>
 
-          <a 
-            href={MAPS_URL} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold text-xs px-4 py-2.5 rounded-full mb-5 transition-colors border border-primary/20 shadow-sm"
-          >
-            <MapPin size={16} />
-            <span>{RESTAURANTE_ADDRESS}</span>
-          </a>
-
-          <div className="w-32 h-32 mb-6 rounded-2xl border border-dashed border-primary/30 bg-primary/5 flex items-center justify-center text-center p-2">
-            <span className="font-dish font-bold text-[10px] text-primary uppercase tracking-wide">aca va a imagen</span>
           </div>
-          <p className="text-[11px] text-gray-400 font-medium">© 2026 Todos los derechos reservados.</p>
-        </footer>
 
-        <div className="bg-dark py-6 flex flex-col items-center justify-center">
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1 opacity-50 text-white/50">Digital Menu Experience</p>
-          <motion.a 
-            href="https://tymasolutions.lat/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 font-bold text-sm tracking-tight group cursor-pointer"
-            whileTap={{ scale: 0.95 }}
-          >
-            <span className="text-white group-hover:text-[#00BFFF] transition-colors duration-200">Hecho por Tyma</span>
-            <span className="text-[#00BFFF] group-hover:text-white transition-colors duration-200">Solutions</span>
-          </motion.a>
         </div>
+      </section>
+
+      {/* 🛍️ PRODUCT CATALOG GRID */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        {filteredProducts.length === 0 ? (
+          <div className="text-center py-16 bg-slate-900/50 rounded-2xl border border-slate-800 space-y-4">
+            <Search className="w-12 h-12 text-slate-600 mx-auto" />
+            <h4 className="text-lg font-bold text-slate-200">No se encontraron jeans con este filtro</h4>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Intenta cambiar la marca, el tipo de corte o la búsqueda de color para ver más opciones disponibles.
+            </p>
+            <button
+              onClick={() => {
+                setSelectedBrand('Todas');
+                setSelectedFit('Todos');
+                setSelectedColorFilter('Todos');
+                setSearchQuery('');
+              }}
+              className="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all"
+            >
+              Restablecer Filtros
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {filteredProducts.map(product => {
+              const activeColor = getActiveColor(product);
+              const viewMode = activeCardViews[product.id] || 'product';
+              const displayedImg = (viewMode === 'poster' && product.imagenPoster) 
+                ? product.imagenPoster 
+                : activeColor.imagen;
+
+              return (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="group relative flex flex-col rounded-2xl glass-card border border-slate-800/90 hover:border-amber-500/50 transition-all duration-300 overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-amber-500/10"
+                >
+                  
+                  {/* Badges Overlay */}
+                  <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5 items-start">
+                    <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-[11px] tracking-wide uppercase shadow-md">
+                      {product.marca}
+                    </span>
+                    {product.stockLimitado && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-950/90 text-rose-400 border border-rose-500/30 text-[10px] font-bold tracking-wider uppercase">
+                        Stock Limitado
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right Action Badge: View Toggle */}
+                  {product.imagenPoster && (
+                    <div className="absolute top-3 right-3 z-20">
+                      <button
+                        onClick={() => handleToggleCardView(product.id)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-900 text-slate-200 border border-slate-700/80 text-[11px] font-semibold flex items-center gap-1 shadow-md transition-all"
+                        title="Cambiar entre foto de modelo y foto del producto"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{viewMode === 'poster' ? 'Ver Jean' : 'Ver Modelo'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Product Image Container */}
+                  <div 
+                    onClick={() => {
+                      setDetailProduct(product);
+                      setModalColor(activeColor);
+                    }}
+                    className="relative w-full h-80 sm:h-96 bg-slate-950 overflow-hidden cursor-pointer group-hover:brightness-105 transition-all"
+                  >
+                    <img 
+                      src={displayedImg} 
+                      alt={`${product.nombreCompleto} ${activeColor.nombre}`}
+                      className="w-full h-full object-cover object-top transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+
+                    {/* Bottom Gradient Fade */}
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#121826] via-[#121826]/70 to-transparent pointer-events-none" />
+
+                    {/* Overlay Active Color Tag */}
+                    <div className="absolute bottom-3 left-3 z-10">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-950/90 backdrop-blur-md text-amber-300 font-semibold text-xs border border-amber-500/30">
+                        Color: {activeColor.nombre}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Content Details */}
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4 bg-[#121826]">
+                    
+                    <div>
+                      {/* Fit tag & price */}
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
+                          {product.corte}
+                        </span>
+                        <div className="text-right">
+                          <span className="text-lg font-black text-gold-gradient font-title">
+                            S/ {product.precio.toFixed(2)}
+                          </span>
+                          {product.precioOriginal && (
+                            <span className="block text-[11px] text-slate-500 line-through -mt-1">
+                              S/ {product.precioOriginal.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Product Title */}
+                      <h4 
+                        onClick={() => {
+                          setDetailProduct(product);
+                          setModalColor(activeColor);
+                        }}
+                        className="text-base font-bold text-slate-100 group-hover:text-amber-300 transition-colors cursor-pointer line-clamp-1"
+                      >
+                        {product.nombreCompleto}
+                      </h4>
+
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                        {product.descripcion}
+                      </p>
+                    </div>
+
+                    {/* Color Swatch Selectors */}
+                    <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Colores disponibles ({product.colores.length}):
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 max-h-16 overflow-y-auto no-scrollbar">
+                        {product.colores.map((col) => {
+                          const isSelected = activeColor.nombre === col.nombre;
+                          return (
+                            <button
+                              key={col.nombre}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectCardColor(product.id, col);
+                              }}
+                              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-all border ${
+                                isSelected
+                                  ? 'bg-amber-500 text-slate-950 font-bold border-amber-300 scale-105 shadow-sm'
+                                  : 'bg-slate-900 text-slate-300 border-slate-700/80 hover:bg-slate-800'
+                              }`}
+                            >
+                              {col.nombre}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Sizes available pill indicator */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                      <span className="font-semibold text-slate-300">Tallas:</span>
+                      <div className="flex items-center gap-1">
+                        {product.tallasDisponibles.map(t => (
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Card Action Buttons */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <button
+                        onClick={() => addToCart(product, activeColor, 30)}
+                        className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-100 font-bold text-xs border border-slate-700 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Añadir</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDirectWhatsAppOrder(product, activeColor, 30)}
+                        className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                        <span>Pedir WhatsApp</span>
+                      </button>
+                    </div>
+
+                  </div>
+
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
       </main>
 
+      {/* 📖 DETAILED PRODUCT MODAL */}
       <AnimatePresence>
-        {cartCount > 0 && !showSummary && !showCheckoutForm && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            className="fixed bottom-0 w-full max-w-md p-5 z-40"
-          >
-            <div className="glass rounded-[2rem] p-4 flex items-center justify-between border border-white/50 shadow-2xl">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center relative overflow-hidden">
-                  <div className="shimmer absolute inset-0 opacity-20"></div>
-                  <ShoppingBag size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tu Pedido</p>
-                  <p className="font-bold text-dark text-lg">{cartCount} Artículos</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSummary(true)}
-                className="bg-primary text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-lg shadow-primary/30 font-bold text-sm"
-              >
-                Ver Pedido
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Summary Modal */}
-      <AnimatePresence>
-        {showSummary && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-end justify-center p-4 lg:p-0"
-          >
+        {detailProduct && modalColor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md">
             <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="bg-white w-full max-w-md rounded-t-[3rem] p-6 max-h-[85vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-4xl bg-[#121826] border border-amber-500/30 rounded-3xl overflow-hidden shadow-2xl my-8 max-h-[90vh] flex flex-col md:flex-row"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="font-title text-2xl text-primary">Mi Pedido</h2>
-                <button
-                  onClick={() => setShowSummary(false)}
-                  className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center"
-                >
-                  <X size={20} className="text-gray-400" />
-                </button>
-              </div>
-              <div className="space-y-3 mb-8">
-                {cart.map(item => (
-                  <div
-                    key={`${item.nombre}-${item.precio}`}
-                    className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-dish font-semibold text-dark text-sm truncate">{item.nombre}</h4>
-                      <p className="font-dish text-xs text-primary font-bold">{item.precio}</p>
-                    </div>
-                    <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-gray-100">
-                      <button onClick={() => updateQuantity(item.nombre, item.precio, -1)} className="text-gray-400">
-                        <Minus size={16} />
-                      </button>
-                      <span className="font-dish font-bold text-sm w-4 text-center">{item.cantidad}</span>
-                      <button onClick={() => updateQuantity(item.nombre, item.precio, 1)} className="text-primary">
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => updateQuantity(item.nombre, item.precio, -item.cantidad)}
-                      className="text-red-300 ml-1"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-dashed border-gray-200 pt-6 mb-8">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-dish text-xl font-bold text-dark">Total a pagar</h3>
-                  <h3 className="font-dish text-xl font-bold text-primary">S/.{calculateTotal().toFixed(2)}</h3>
-                </div>
-              </div>
+              {/* Close Button */}
               <button
-                onClick={() => {
-                  setShowSummary(false);
-                  setShowCheckoutForm(true);
-                }}
-                className="w-full bg-[#25D366] text-white py-4 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-green-100 hover:scale-[1.02] transition-transform font-bold text-sm uppercase tracking-wider"
+                onClick={() => setDetailProduct(null)}
+                className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-950/80 text-slate-300 hover:text-white border border-slate-700 hover:bg-slate-900 transition-all"
               >
-                Continuar al Pedido
-                <ChevronRight size={20} />
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Checkout / Delivery Form Modal */}
-      <AnimatePresence>
-        {showCheckoutForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            >
-              <button
-                onClick={() => setShowCheckoutForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"
-              >
-                <X size={18} className="text-gray-400" />
+                <X className="w-5 h-5" />
               </button>
 
-              <div className="flex flex-col items-center text-center mb-4 mt-1">
-                <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mb-2 text-primary">
-                  <ShoppingBag size={24} />
+              {/* Left Image Showcase */}
+              <div className="md:w-1/2 relative bg-slate-950 flex flex-col justify-between p-4 border-b md:border-b-0 md:border-r border-slate-800">
+                <div className="relative h-80 sm:h-96 md:h-[450px] w-full rounded-2xl overflow-hidden">
+                  <img
+                    src={modalColor.imagen}
+                    alt={modalColor.nombre}
+                    className="w-full h-full object-cover object-top"
+                  />
+                  <span className="absolute bottom-3 left-3 px-3 py-1 rounded-lg bg-slate-950/90 text-amber-300 font-bold text-xs border border-amber-500/30">
+                    Color: {modalColor.nombre}
+                  </span>
                 </div>
-                <h2 className="font-title text-2xl text-dark leading-none mb-1">Datos de Entrega</h2>
-                <p className="text-xs text-gray-500">Ingresa tus datos para procesar el pedido vía WhatsApp</p>
+
+                {/* Color Thumbnails Row */}
+                <div className="mt-3 space-y-1">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Variantes de Color:
+                  </span>
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                    {detailProduct.colores.map(c => (
+                      <button
+                        key={c.nombre}
+                        onClick={() => setModalColor(c)}
+                        className={`relative w-12 h-14 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                          modalColor.nombre === c.nombre ? 'border-amber-400 scale-105' : 'border-slate-800 opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={c.imagen} alt={c.nombre} className="w-full h-full object-cover object-top" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">¿Quién recibe el pedido? *</label>
-                  <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-3 text-gray-400" />
-                    <input
-                      required
-                      type="text"
-                      value={customerData.nombre}
-                      onChange={e => setCustomerData({ ...customerData, nombre: e.target.value })}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      placeholder="Tu nombre completo"
-                    />
+              {/* Right Details Panel */}
+              <div className="md:w-1/2 p-6 sm:p-8 flex flex-col justify-between space-y-6 overflow-y-auto">
+                <div className="space-y-4">
+                  
+                  {/* Brand & Corte */}
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-xs uppercase">
+                      {detailProduct.marca}
+                    </span>
+                    <span className="px-3 py-1 rounded-md bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold">
+                      {detailProduct.corte}
+                    </span>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Dirección / Referencia *</label>
-                  <div className="relative">
-                    <MapPin size={16} className="absolute left-3.5 top-3 text-gray-400" />
-                    <input
-                      required
-                      type="text"
-                      value={customerData.direccion}
-                      onChange={e => setCustomerData({ ...customerData, direccion: e.target.value })}
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
-                      placeholder="Ej: Jr. Callao 123 / Frente al parque"
-                    />
-                  </div>
-                </div>
+                  <h3 className="text-2xl sm:text-3xl font-black font-title text-slate-100">
+                    {detailProduct.nombreCompleto}
+                  </h3>
 
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Ubicación GPS (Opcional)</label>
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    disabled={isGettingLocation}
-                    className={`w-full py-2.5 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition-all ${
-                      locationSuccess
-                        ? 'bg-green-50 border-green-200 text-green-700'
-                        : 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
-                    }`}
-                  >
-                    {isGettingLocation ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        <span>Obteniendo GPS...</span>
-                      </>
-                    ) : locationSuccess ? (
-                      <>
-                        <CheckCircle size={16} className="text-green-600" />
-                        <span>✓ Ubicación GPS Agregada</span>
-                      </>
-                    ) : (
-                      <>
-                        <Navigation size={16} />
-                        <span>Obtener mi ubicación por GPS</span>
-                      </>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-black text-gold-gradient font-title">
+                      S/ {detailProduct.precio.toFixed(2)}
+                    </span>
+                    {detailProduct.precioOriginal && (
+                      <span className="text-sm text-slate-500 line-through">
+                        S/ {detailProduct.precioOriginal.toFixed(2)}
+                      </span>
                     )}
-                  </button>
-                  {locationError && (
-                    <p className="text-[10px] text-red-500 mt-1 ml-1 font-medium">{locationError}</p>
-                  )}
-                </div>
+                  </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1 block mb-1">Medio de Pago *</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { id: 'Yape', label: 'Yape / Plin', icon: Smartphone },
-                      { id: 'Tarjeta', label: 'Tarjeta (Visa)', icon: CreditCard },
-                      { id: 'Efectivo', label: 'Efectivo', icon: DollarSign }
-                    ].map(item => {
-                      const IconComp = item.icon;
-                      const selected = customerData.medioPago === item.id;
-                      return (
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed border-t border-slate-800 pt-3">
+                    {detailProduct.descripcion}
+                  </p>
+
+                  {/* Specs & Features List */}
+                  <div className="space-y-2 pt-2">
+                    <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      Detalles del Producto:
+                    </h5>
+                    <ul className="space-y-1.5 text-xs text-slate-300">
+                      {detailProduct.detalles.map((d, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{d}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Size Selector */}
+                  <div className="space-y-2 pt-3 border-t border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                        Selecciona tu Talla:
+                      </span>
+                      <button
+                        onClick={() => setShowSizeGuide(true)}
+                        className="text-xs text-amber-400 hover:underline flex items-center gap-1"
+                      >
+                        <Ruler className="w-3.5 h-3.5" /> Guía de tallas
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {detailProduct.tallasDisponibles.map(t => (
                         <button
-                          type="button"
-                          key={item.id}
-                          onClick={() => setCustomerData({ ...customerData, medioPago: item.id as any })}
-                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-center text-center transition-all ${
-                            selected
-                              ? 'bg-primary text-white border-primary shadow-sm font-bold'
-                              : 'bg-gray-50 border-gray-100 text-dark hover:border-gray-300'
+                          key={t}
+                          onClick={() => setModalSize(t)}
+                          className={`w-11 h-11 rounded-xl text-sm font-bold transition-all border ${
+                            modalSize === t
+                              ? 'bg-amber-500 text-slate-950 border-amber-300 scale-105 shadow-md shadow-amber-500/20'
+                              : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
                           }`}
                         >
-                          <IconComp size={18} className="mb-1" />
-                          <span className="text-[11px] leading-tight">{item.label}</span>
+                          {t}
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                  {customerData.medioPago === 'Efectivo' && (
-                    <div className="mt-2">
+
+                </div>
+
+                {/* Modal Footer Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-800">
+                  <button
+                    onClick={() => {
+                      addToCart(detailProduct, modalColor, modalSize);
+                      setDetailProduct(null);
+                    }}
+                    className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs border border-slate-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-amber-400" />
+                    <span>Añadir al Carrito</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleDirectWhatsAppOrder(detailProduct, modalColor, modalSize);
+                      setDetailProduct(null);
+                    }}
+                    className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    <span>Pedir por WhatsApp</span>
+                  </button>
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 📏 GUÍA DE TALLAS & CORTES MODAL */}
+      <AnimatePresence>
+        {showSizeGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-slate-950/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl bg-[#121826] border border-amber-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl my-8"
+            >
+              <button
+                onClick={() => setShowSizeGuide(false)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-slate-900 text-slate-300 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                  <Ruler className="w-4 h-4" /> Guía Oficial Plumas Jeans
+                </div>
+                <h3 className="text-2xl font-black font-title text-slate-100">
+                  GUÍA DE CORTES & EQUIVALENCIA DE TALLAS
+                </h3>
+              </div>
+
+              {/* Fit Types Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="font-bold text-amber-400 block">Slim Fit (Lois & Bronco)</span>
+                  <p className="text-slate-400">Ceñido en muslo y pantorrilla con tiro medio. Ideal para lucir una figura estilizada y moderna.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="font-bold text-blue-400 block">Semi Pitillo (Element & Pionier)</span>
+                  <p className="text-slate-400">Corte entallado sin apretar excesivamente. Bota semi recta ideal para calzado casual y zapatillas.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="font-bold text-pink-400 block">MOM Jeans (Element)</span>
+                  <p className="text-slate-400">Tiro alto holgado en caderas con acabado cónico. Estilo vintage en tendencia urbana.</p>
+                </div>
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                  <span className="font-bold text-emerald-400 block">Corte Clásico (Pionier)</span>
+                  <p className="text-slate-400">Caída recta tradicional desde la cintura hasta el tobillo. Máximo confort y solidez.</p>
+                </div>
+              </div>
+
+              {/* Table of sizes */}
+              <div className="border border-slate-800 rounded-xl overflow-hidden text-xs">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-amber-400 font-bold uppercase border-b border-slate-800">
+                    <tr>
+                      <th className="p-2.5">Talla Peruana</th>
+                      <th className="p-2.5">Cintura (cm)</th>
+                      <th className="p-2.5">Cadera (cm)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                    <tr><td className="p-2.5 font-bold text-slate-100">Talla 28</td><td className="p-2.5">70 - 74 cm</td><td className="p-2.5">88 - 92 cm</td></tr>
+                    <tr><td className="p-2.5 font-bold text-slate-100">Talla 30</td><td className="p-2.5">75 - 79 cm</td><td className="p-2.5">93 - 97 cm</td></tr>
+                    <tr><td className="p-2.5 font-bold text-slate-100">Talla 32</td><td className="p-2.5">80 - 84 cm</td><td className="p-2.5">98 - 102 cm</td></tr>
+                    <tr><td className="p-2.5 font-bold text-slate-100">Talla 34</td><td className="p-2.5">85 - 89 cm</td><td className="p-2.5">103 - 107 cm</td></tr>
+                    <tr><td className="p-2.5 font-bold text-slate-100">Talla 36</td><td className="p-2.5">90 - 95 cm</td><td className="p-2.5">108 - 113 cm</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                onClick={() => setShowSizeGuide(false)}
+                className="w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase"
+              >
+                Entendido, Volver al Catálogo
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 🛒 CART & CHECKOUT SLIDE-OVER DRAWER */}
+      <AnimatePresence>
+        {showCartDrawer && (
+          <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="w-full max-w-md bg-[#121826] border-l border-slate-800 h-full flex flex-col justify-between shadow-2xl"
+            >
+              {/* Drawer Header */}
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-lg font-bold font-title text-slate-100">Mi Pedido Plumas Jeans</h3>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                    {cartTotalCount} items
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowCartDrawer(false)}
+                  className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Drawer Items Body */}
+              <div className="p-5 flex-1 overflow-y-auto space-y-4">
+                {cart.length === 0 ? (
+                  <div className="text-center py-16 space-y-3">
+                    <ShoppingBag className="w-12 h-12 text-slate-700 mx-auto" />
+                    <p className="text-sm font-semibold text-slate-300">Tu pedido está vacío</p>
+                    <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                      Explora el catálogo y añade los jeans de tu preferencia para solicitar tu envío por WhatsApp.
+                    </p>
+                  </div>
+                ) : (
+                  cart.map(item => (
+                    <div
+                      key={item.id}
+                      className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex gap-3 items-center"
+                    >
+                      <img
+                        src={item.color.imagen}
+                        alt={item.product.nombreCompleto}
+                        className="w-16 h-20 object-cover object-top rounded-lg bg-slate-950 shrink-0"
+                      />
+
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h5 className="text-xs font-bold text-slate-100 truncate">
+                          {item.product.nombreCompleto}
+                        </h5>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                          <span>Color: <strong className="text-amber-300">{item.color.nombre}</strong></span>
+                          <span>•</span>
+                          <span>Talla: <strong className="text-slate-200">{item.talla}</strong></span>
+                        </div>
+                        <span className="text-sm font-black text-gold-gradient block font-title">
+                          S/ {(item.product.precio * item.cantidad).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Quantity Controls */}
+                      <div className="flex flex-col items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                          <button
+                            onClick={() => updateCartQty(item.id, -1)}
+                            className="p-1 rounded text-slate-400 hover:text-white"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-bold text-slate-100 px-1">
+                            {item.cantidad}
+                          </span>
+                          <button
+                            onClick={() => updateCartQty(item.id, 1)}
+                            className="p-1 rounded text-slate-400 hover:text-white"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-rose-400 hover:text-rose-300 text-[10px] flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-3 h-3" /> Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* Checkout customer data form */}
+                {cart.length > 0 && (
+                  <div className="pt-4 border-t border-slate-800 space-y-3">
+                    <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      Datos de Envío para el Pedido:
+                    </h5>
+
+                    <div>
+                      <label className="text-[11px] text-slate-400 block mb-1">Nombre Completo:</label>
                       <input
                         type="text"
-                        value={customerData.montoEfectivo}
-                        onChange={e => setCustomerData({ ...customerData, montoEfectivo: e.target.value })}
-                        className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-primary/50"
-                        placeholder="¿Con cuánto dinero cancelas? (Ej: 50 o 100)"
+                        placeholder="Ej. Fabian Torres"
+                        value={customerData.nombre}
+                        onChange={(e) => setCustomerData(prev => ({ ...prev, nombre: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
                       />
                     </div>
-                  )}
-                </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-[#25D366] text-white py-3.5 rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 mt-3"
-                >
-                  <span>Enviar Pedido a WhatsApp</span>
-                  <ChevronRight size={18} />
-                </button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Teléfono:</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. 993399915"
+                          value={customerData.telefono}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, telefono: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Ciudad / Destino:</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. Lima / Arequipa"
+                          value={customerData.ciudad}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, ciudad: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                        />
+                      </div>
+                    </div>
 
-      {/* Image Modal */}
-      <AnimatePresence>
-        {selectedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setSelectedImage(null)}
-          >
-            <button
-              className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedImage(null);
-              }}
-            >
-              <X size={28} />
-            </button>
-            <motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              src={selectedImage}
-              alt="Plato ampliado"
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Birthday Modal */}
-      <AnimatePresence>
-        {showBirthdayForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            >
-              <button
-                onClick={() => setShowBirthdayForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"
-              >
-                <X size={18} className="text-gray-400" />
-              </button>
-
-              <div className="flex flex-col items-center text-center mb-5 mt-2">
-                <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-3">
-                  <Gift size={24} className="text-secondary" />
-                </div>
-                <h2 className="font-title text-2xl text-dark leading-none mb-2">¡Tu Cumpleaños!</h2>
-                <p className="text-xs text-gray-500">Déjanos tus datos para enviarte una sorpresa en tu día especial.</p>
-              </div>
-
-              {birthdaySuccess ? (
-                <div className="bg-green-50 text-green-600 p-4 rounded-2xl text-center text-sm font-bold border border-green-100">
-                  ¡Gracias! Tus datos han sido guardados.
-                </div>
-              ) : (
-                <form onSubmit={handleBirthdaySubmit} className="space-y-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Nombre Completo</label>
-                    <input required type="text" value={birthdayData.nombre} onChange={e => setBirthdayData({...birthdayData, nombre: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-colors" placeholder="Ej. Juan Pérez" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Teléfono</label>
-                    <input required type="tel" minLength={9} maxLength={11} pattern="[0-9]*" value={birthdayData.telefono} onChange={e => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      setBirthdayData({...birthdayData, telefono: val});
-                    }} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-colors" placeholder="Ej. 987654321" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Fecha de Nacimiento</label>
-                    <input required type="date" value={birthdayData.fechaNacimiento} onChange={e => setBirthdayData({...birthdayData, fechaNacimiento: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-colors text-gray-700" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Distrito</label>
-                    <input required type="text" value={birthdayData.distrito} onChange={e => setBirthdayData({...birthdayData, distrito: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-colors" placeholder="Ej. Miraflores" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Correo Electrónico (Opcional)</label>
-                    <input type="email" value={birthdayData.correo} onChange={e => setBirthdayData({...birthdayData, correo: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-secondary/50 transition-colors" placeholder="correo@ejemplo.com" />
-                  </div>
-                  
-                  <button disabled={isSubmittingBirthday} type="submit" className="w-full bg-secondary text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-secondary/20 mt-2 disabled:opacity-70 flex justify-center items-center">
-                    {isSubmittingBirthday ? <Loader2 size={18} className="animate-spin" /> : "Guardar mis datos"}
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Review Modal */}
-      <AnimatePresence>
-        {showReviewForm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto"
-            >
-              <button
-                onClick={() => setShowReviewForm(false)}
-                className="absolute top-4 right-4 w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center"
-              >
-                <X size={18} className="text-gray-400" />
-              </button>
-
-              <div className="flex flex-col items-center text-center mb-5 mt-2">
-                <div className="w-12 h-12 bg-teal-50 rounded-full flex items-center justify-center mb-3">
-                  <Star size={24} className="text-primary fill-primary" />
-                </div>
-                <h2 className="font-title text-2xl text-dark leading-none mb-2">¡Calificanos!</h2>
-                <p className="text-xs text-gray-500">Tu opinión es muy importante para nosotros.</p>
-              </div>
-
-              {reviewSuccess ? (
-                <div className="bg-green-50 text-green-600 p-4 rounded-2xl text-center text-sm font-bold border border-green-100">
-                  ¡Gracias por tu reseña! Nos ayuda a mejorar.
-                </div>
-              ) : (
-                <form onSubmit={handleReviewSubmit} className="space-y-5">
-                  
-                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center">
-                    <p className="text-xs font-bold text-gray-500 mb-2">Atención del Mozo</p>
-                    <div className="flex gap-1">
-                      {[1,2,3,4,5].map(star => (
-                        <button 
-                          key={star} type="button" 
-                          onClick={() => setReviewData({...reviewData, estrellasMozo: star})}
-                          className="p-1 transition-transform hover:scale-110"
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] text-slate-400">Dirección de Entrega:</label>
+                        <button
+                          type="button"
+                          onClick={handleGetLocation}
+                          disabled={isGettingLocation}
+                          className="text-[10px] text-amber-400 hover:underline flex items-center gap-1"
                         >
-                          <Star size={28} className={reviewData.estrellasMozo >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
+                          <MapPin className="w-3 h-3" /> {isGettingLocation ? 'Obteniendo GPS...' : 'Usar GPS'}
                         </button>
-                      ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Ej. Av. Larco 456 Dpto 301"
+                        value={customerData.direccion}
+                        onChange={(e) => setCustomerData(prev => ({ ...prev, direccion: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Entrega:</label>
+                        <select
+                          value={customerData.metodoEntrega}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, metodoEntrega: e.target.value }))}
+                          className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 focus:outline-none"
+                        >
+                          <option>Envío a Domicilio</option>
+                          <option>Agencia Shalom</option>
+                          <option>Olva Courier</option>
+                          <option>Recojo en Tienda</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] text-slate-400 block mb-1">Medio de Pago:</label>
+                        <select
+                          value={customerData.medioPago}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, medioPago: e.target.value }))}
+                          className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 focus:outline-none"
+                        >
+                          <option>Yape / Plin</option>
+                          <option>Tarjeta Visa / Mastercard</option>
+                          <option>Transferencia BCP / BBVA</option>
+                          <option>Pago Contraentrega</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center">
-                    <p className="text-xs font-bold text-gray-500 mb-2">Calidad de la Comida</p>
-                    <div className="flex gap-1">
-                      {[1,2,3,4,5].map(star => (
-                        <button 
-                          key={star} type="button" 
-                          onClick={() => setReviewData({...reviewData, estrellasComida: star})}
-                          className="p-1 transition-transform hover:scale-110"
-                        >
-                          <Star size={28} className={reviewData.estrellasComida >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
-                        </button>
-                      ))}
-                    </div>
+              {/* Drawer Footer */}
+              {cart.length > 0 && (
+                <div className="p-5 border-t border-slate-800 space-y-4 bg-slate-950">
+                  <div className="flex items-center justify-between text-base">
+                    <span className="font-bold text-slate-300">TOTAL PEDIDO:</span>
+                    <span className="text-2xl font-black text-gold-gradient font-title">
+                      S/ {cartTotalPrice.toFixed(2)}
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">Comentario (Opcional)</label>
-                    <textarea 
-                      rows={3} 
-                      value={reviewData.comentario} 
-                      onChange={e => setReviewData({...reviewData, comentario: e.target.value})} 
-                      className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none mt-1" 
-                      placeholder="Cuéntanos más sobre tu experiencia..." 
-                    />
-                  </div>
-                  
-                  <button disabled={isSubmittingReview} type="submit" className="w-full bg-primary text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-primary/20 mt-2 disabled:opacity-70 flex justify-center items-center">
-                    {isSubmittingReview ? <Loader2 size={18} className="animate-spin" /> : "Enviar Reseña"}
+                  <button
+                    onClick={handleSendCartToWhatsApp}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20"
+                  >
+                    <Smartphone className="w-5 h-5" />
+                    <span>Enviar Pedido a WhatsApp</span>
                   </button>
-                </form>
+                </div>
               )}
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
+
+      {/* 🛡️ FOOTER & BRAND VALUE PROPOSITION */}
+      <footer className="bg-slate-950 border-t border-slate-800/80 py-12 text-slate-400 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            
+            {/* Brand column */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <img src={LOGO_IMAGE} alt="Plumas Jeans" className="h-10 w-auto rounded border border-amber-500/30 p-0.5 bg-black" />
+                <h4 className="text-lg font-black font-title text-gold-gradient">PLUMAS JEANS</h4>
+              </div>
+              <p className="text-slate-400 leading-relaxed">
+                Especialistas en confección y comercialización de jeans masculinos y femeninos de alta calidad. Representantes de las marcas más icónicas del mercado peruano e internacional.
+              </p>
+            </div>
+
+            {/* Benefits column */}
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Beneficios Plumas Jeans</h5>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Garantía de cambio de talla</li>
+                <li className="flex items-center gap-2"><Truck className="w-4 h-4 text-amber-400" /> Envíos asegurados a todo el Perú</li>
+                <li className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-400" /> 100% Algodón y Denim Stretch</li>
+              </ul>
+            </div>
+
+            {/* Marcas column */}
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Nuestras Marcas</h5>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">Lois Originals</span>
+                <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">Element</span>
+                <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">Pionier</span>
+                <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 font-semibold">Bronco</span>
+              </div>
+            </div>
+
+            {/* Payment & Contact column */}
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Atención al Cliente</h5>
+              <p className="text-slate-300">Horarios: Lunes a Sábado 9:00 am - 8:00 pm</p>
+              <p className="text-slate-300">WhatsApp: +51 993 399 915</p>
+              <div className="pt-2 flex items-center gap-2">
+                <span className="px-2 py-1 rounded bg-purple-900/40 text-purple-300 border border-purple-500/30 text-[10px] font-bold">Yape</span>
+                <span className="px-2 py-1 rounded bg-cyan-900/40 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold">Plin</span>
+                <span className="px-2 py-1 rounded bg-blue-900/40 text-blue-300 border border-blue-500/30 text-[10px] font-bold">Visa</span>
+                <span className="px-2 py-1 rounded bg-amber-900/40 text-amber-300 border border-amber-500/30 text-[10px] font-bold">Shalom / Olva</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="border-t border-slate-900 pt-6 text-center text-[11px] text-slate-500">
+            © 2026 PLUMAS JEANS. Todos los derechos reservados. Catálogo Digital Interactivo.
+          </div>
+
+        </div>
+      </footer>
 
     </div>
   );
