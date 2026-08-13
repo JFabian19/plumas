@@ -22,6 +22,227 @@ interface CartItem {
   cantidad: number;
 }
 
+// 🖼️ Card Image Slideshow Component with Smooth Auto-Transition
+function ProductCardImage({
+  product,
+  activeColor,
+  onOpenDetail,
+}: {
+  product: JeansProduct;
+  activeColor: ColorVariant;
+  onOpenDetail: () => void;
+}) {
+  const hasPoster = !!product.imagenPoster;
+  const [viewIndex, setViewIndex] = useState<0 | 1>(0); // 0: product cutout, 1: model poster
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto transition every 3.5 seconds if poster exists
+  useEffect(() => {
+    if (!hasPoster || isPaused) return;
+    const interval = setInterval(() => {
+      setViewIndex(prev => (prev === 0 ? 1 : 0));
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [hasPoster, isPaused]);
+
+  const currentImage = viewIndex === 1 && product.imagenPoster ? product.imagenPoster : activeColor.imagen;
+  const isPoster = viewIndex === 1 && hasPoster;
+
+  const toggleView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasPoster) {
+      setViewIndex(prev => (prev === 0 ? 1 : 0));
+    }
+  };
+
+  return (
+    <div 
+      className="relative w-full h-80 sm:h-96 bg-slate-100/90 flex items-center justify-center p-4 overflow-hidden cursor-pointer group-hover:bg-slate-200/60 transition-all select-none"
+      onClick={onOpenDetail}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Top Badges Container - Never Colliding */}
+      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-1.5 pointer-events-auto">
+          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-[11px] tracking-wide uppercase shadow-md">
+            {product.marca}
+          </span>
+          {product.stockLimitado && (
+            <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
+              Stock Limitado
+            </span>
+          )}
+        </div>
+
+        {hasPoster && (
+          <button
+            onClick={toggleView}
+            className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 hover:bg-white text-slate-800 border border-slate-200 text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all backdrop-blur-md active:scale-95"
+            title="Toca para cambiar vista foto / modelo"
+          >
+            <Eye className="w-3.5 h-3.5 text-amber-600" />
+            <span>{isPoster ? 'Ver Jean' : 'Ver Modelo'}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Crossfading Smooth Image Transition */}
+      <AnimatePresence mode="wait">
+        <motion.img
+          key={`${product.id}-${isPoster ? 'poster' : activeColor.nombre}`}
+          src={currentImage}
+          alt={`${product.nombreCompleto} ${isPoster ? 'Modelo' : activeColor.nombre}`}
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="max-w-full max-h-full w-auto h-auto object-contain object-center drop-shadow-md group-hover:scale-105 transition-transform duration-500 ease-out"
+        />
+      </AnimatePresence>
+
+      {/* Bottom Floating Info & Indicator Pill */}
+      <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
+        <span className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-md text-amber-800 font-bold text-xs border border-slate-200 shadow-md">
+          {isPoster ? '📸 Foto Modelo' : `Color: ${activeColor.nombre}`}
+        </span>
+
+        {hasPoster && (
+          <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 shadow-sm">
+            <button
+              onClick={(e) => { e.stopPropagation(); setViewIndex(0); }}
+              className={`w-2 h-2 rounded-full transition-all ${!isPoster ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
+              title="Foto Jean"
+            />
+            <button
+              onClick={(e) => { e.stopPropagation(); setViewIndex(1); }}
+              className={`w-2 h-2 rounded-full transition-all ${isPoster ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
+              title="Foto Modelo"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 🔍 Detail Modal Gallery Component with Auto-Transition Slideshow & Thumbnails
+function DetailModalGallery({
+  product,
+  selectedColor,
+  onZoom,
+}: {
+  product: JeansProduct;
+  selectedColor: ColorVariant;
+  onZoom: (img: string) => void;
+}) {
+  const [activeView, setActiveView] = useState<'color' | 'poster'>('color');
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto transition between color photo and model poster every 3.5s
+  useEffect(() => {
+    if (!product.imagenPoster || isPaused) return;
+    const timer = setInterval(() => {
+      setActiveView(prev => (prev === 'color' ? 'poster' : 'color'));
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [product.imagenPoster, isPaused, selectedColor]);
+
+  // When color selection changes, show the color photo first
+  useEffect(() => {
+    setActiveView('color');
+  }, [selectedColor]);
+
+  const currentImg = activeView === 'poster' && product.imagenPoster ? product.imagenPoster : selectedColor.imagen;
+  const isPoster = activeView === 'poster' && !!product.imagenPoster;
+
+  return (
+    <div 
+      className="space-y-3"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      {/* Big Main Image Container */}
+      <div 
+        onClick={() => onZoom(currentImg)}
+        className="relative bg-slate-50 rounded-3xl border border-slate-200 overflow-hidden flex items-center justify-center p-4 sm:p-6 min-h-[340px] sm:min-h-[420px] cursor-zoom-in group shadow-sm"
+      >
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={`${product.id}-${isPoster ? 'poster' : selectedColor.nombre}`}
+            src={currentImg}
+            alt={`${product.nombreCompleto} ${isPoster ? 'Modelo' : selectedColor.nombre}`}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
+            className="max-w-full max-h-[420px] object-contain object-center drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
+          />
+        </AnimatePresence>
+
+        {/* Top Badges */}
+        <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">
+          <span className="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-sm">
+            {product.marca}
+          </span>
+          {product.stockLimitado && (
+            <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
+              Stock Limitado
+            </span>
+          )}
+        </div>
+
+        {/* Zoom badge */}
+        <div className="absolute bottom-4 right-4 z-10">
+          <span className="px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md text-slate-700 font-bold text-xs border border-slate-200 shadow-md flex items-center gap-1.5">
+            <ZoomIn className="w-3.5 h-3.5 text-amber-600" />
+            Ampliar
+          </span>
+        </div>
+      </div>
+
+      {/* Thumbnails / Switcher Bar */}
+      {product.imagenPoster && (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveView('color')}
+            className={`flex-1 flex items-center gap-2.5 p-2 rounded-2xl border transition-all ${
+              activeView === 'color'
+                ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <div className="w-12 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-1 border border-slate-200 shrink-0">
+              <img src={selectedColor.imagen} alt="Jean" className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">Foto Prenda</span>
+              <span className="text-xs font-black text-slate-900 truncate block">Color: {selectedColor.nombre}</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveView('poster')}
+            className={`flex-1 flex items-center gap-2.5 p-2 rounded-2xl border transition-all ${
+              activeView === 'poster'
+                ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
+                : 'bg-white border-slate-200 hover:border-slate-300'
+            }`}
+          >
+            <div className="w-12 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-1 border border-slate-200 shrink-0">
+              <img src={product.imagenPoster} alt="Modelo" className="max-w-full max-h-full object-contain" />
+            </div>
+            <div className="text-left min-w-0">
+              <span className="text-[10px] font-bold text-slate-500 uppercase block">Lookbook</span>
+              <span className="text-xs font-black text-slate-900 truncate block">Foto Modelo</span>
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   // Google Sheets live prices (fetched on mount)
   const [sheetPrices, setSheetPrices] = useState<Map<string, number>>(new Map());
@@ -265,33 +486,28 @@ export default function App() {
     window.open(`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encodedMsg}`, '_blank');
   };
 
+  // Lock background scroll when modals/drawers are open
+  useEffect(() => {
+    if (detailProduct || showCartDrawer || showSizeGuide || addedItemModal || zoomImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [detailProduct, showCartDrawer, showSizeGuide, addedItemModal, zoomImage]);
+
   const handleOpenDetailModal = useCallback((product: JeansProduct, color?: ColorVariant) => {
-    savedScrollRef.current = window.scrollY;
     setDetailProduct(product);
     setModalColor(color || product.colores[0]);
     setModalSize(product.tallasDisponibles[0]);
-    window.history.pushState({ productDetail: true }, '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleCloseDetail = useCallback(() => {
     setDetailProduct(null);
     setZoomImage(null);
-    setTimeout(() => {
-      window.scrollTo({ top: savedScrollRef.current, behavior: 'smooth' });
-    }, 50);
   }, []);
-
-  // Handle browser back button to close detail view
-  useEffect(() => {
-    const onPopState = () => {
-      if (detailProduct) {
-        handleCloseDetail();
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, [detailProduct, handleCloseDetail]);
 
   // Image zoom handlers
   const handleZoomOpen = (imgSrc: string) => {
@@ -668,14 +884,9 @@ export default function App() {
                       No hay productos disponibles bajo esta selección.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-6 lg:gap-8">
                       {catProducts.map(product => {
                         const activeColor = getActiveColor(product);
-                        const viewMode = activeCardViews[product.id] || 'product';
-                        const displayedImg = (viewMode === 'poster' && product.imagenPoster) 
-                          ? product.imagenPoster 
-                          : activeColor.imagen;
-                        
                         const precioFormateado = formatPrice(product.precio);
 
                         return (
@@ -687,75 +898,35 @@ export default function App() {
                             transition={{ duration: 0.3 }}
                             className="group relative flex flex-col rounded-2xl bg-white border border-slate-200 hover:border-amber-500/60 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-xl"
                           >
-                            
-                            {/* Badges Overlay */}
-                            <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5 items-start">
-                              <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-[11px] tracking-wide uppercase shadow-md">
-                                {product.marca}
-                              </span>
-                              {product.stockLimitado && (
-                                <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
-                                  Stock Limitado
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Right Action Badge: View Toggle */}
-                            {product.imagenPoster && (
-                              <div className="absolute top-3 right-3 z-20">
-                                <button
-                                  onClick={() => handleToggleCardView(product.id)}
-                                  className="px-2.5 py-1 rounded-lg bg-white/90 hover:bg-white text-slate-800 border border-slate-200 text-[11px] font-bold flex items-center gap-1 shadow-md transition-all backdrop-blur-md"
-                                  title="Cambiar vista foto jean / modelo"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>{viewMode === 'poster' ? 'Ver Producto' : 'Ver Modelo'}</span>
-                                </button>
-                              </div>
-                            )}
-
-                            {/* 🖼️ PERFECTLY CENTERED & NON-CROPPED PRODUCT PHOTO BOX */}
-                            <div 
-                              onClick={() => handleOpenDetailModal(product, activeColor)}
-                              className="relative w-full h-80 sm:h-96 bg-slate-100/90 flex items-center justify-center p-3 overflow-hidden cursor-pointer group-hover:bg-slate-200/60 transition-all"
-                            >
-                              <img 
-                                src={displayedImg} 
-                                alt={`${product.nombreCompleto} ${activeColor.nombre}`}
-                                className="max-w-full max-h-full w-auto h-auto object-contain object-center transform group-hover:scale-105 transition-transform duration-500 ease-out drop-shadow-md"
-                              />
-
-                              {/* Bottom Color Tag */}
-                              <div className="absolute bottom-3 left-3 z-10">
-                                <span className="px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-md text-amber-800 font-bold text-xs border border-slate-200 shadow-md">
-                                  Color: {activeColor.nombre}
-                                </span>
-                              </div>
-                            </div>
+                            {/* 🖼️ CARD IMAGE SLIDESHOW WITH SMOOTH AUTO-TRANSITION */}
+                            <ProductCardImage
+                              product={product}
+                              activeColor={activeColor}
+                              onOpenDetail={() => handleOpenDetailModal(product, activeColor)}
+                            />
 
                             {/* Card Content Details - Light Mode */}
                             <div className="p-5 flex-1 flex flex-col justify-between space-y-4 bg-white">
-                              
                               <div>
-                                {/* Fit tag & price */}
-                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                  <span className="text-xs font-extrabold text-blue-700 uppercase tracking-wider">
+                                {/* Fit tag & price in non-colliding flex header */}
+                                <div className="flex items-center justify-between gap-3 mb-2">
+                                  <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200 text-xs font-black uppercase tracking-wider">
                                     {product.corte}
                                   </span>
-                                  <div className="text-right">
+                                  <div className="text-right shrink-0">
                                     {precioFormateado ? (
-                                      <>
-                                        <span className="text-lg font-black text-amber-600 font-title">
-                                          {precioFormateado}
-                                        </span>
+                                      <div className="flex items-baseline justify-end gap-1.5">
                                         {product.precioOriginal && product.precioOriginal > 0 && (
-                                          <span className="block text-[11px] text-slate-400 line-through -mt-1">
+                                          <span className="text-xs text-slate-400 line-through font-semibold">
                                             {formatPrice(product.precioOriginal)}
                                           </span>
                                         )}
-                                      </>
+                                        <span className="text-xl font-black text-amber-600 font-title">
+                                          {precioFormateado}
+                                        </span>
+                                      </div>
                                     ) : (
-                                      <span className="text-[11px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
                                         Consultar
                                       </span>
                                     )}
@@ -765,18 +936,18 @@ export default function App() {
                                 {/* Product Title */}
                                 <h4 
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer"
+                                  className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer leading-snug"
                                 >
                                   {product.nombreCompleto}
                                 </h4>
 
-                                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed font-medium">
+                                <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
                                   {product.descripcion}
                                 </p>
                               </div>
 
                               {/* Colors & Sizes Information Badge */}
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                              <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
                                 <span className="font-semibold text-slate-600">
                                   <strong className="text-amber-700 font-bold">{product.colores.length}</strong> {product.colores.length === 1 ? 'color disponible' : 'colores disponibles'}
                                 </span>
@@ -786,20 +957,20 @@ export default function App() {
                               </div>
 
                               {/* Card Action Buttons: Open Modal to Configure Color & Size */}
-                              <div className="grid grid-cols-2 gap-2 pt-1">
+                              <div className="grid grid-cols-2 gap-2.5 pt-1">
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-3 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
-                                  <ShoppingBag className="w-3.5 h-3.5" />
+                                  <ShoppingBag className="w-4 h-4" />
                                   <span>Añadir</span>
                                 </button>
 
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
-                                  <Smartphone className="w-3.5 h-3.5" />
+                                  <Smartphone className="w-4 h-4" />
                                   <span>Pedir WhatsApp</span>
                                 </button>
                               </div>
@@ -855,7 +1026,7 @@ export default function App() {
       {/* 🎯 CENTER SCREEN ADDED-TO-CART CONFIRMATION MODAL */}
       <AnimatePresence>
         {addedItemModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.85, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -925,201 +1096,178 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 🔍 PRODUCT DETAIL FULL-PAGE VIEW */}
+      {/* 🔍 PRODUCT DETAIL POPUP MODAL */}
       <AnimatePresence>
         {detailProduct && modalColor && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-white overflow-y-auto"
-          >
-            {/* Sticky Back Bar */}
-            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm">
-              <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden my-auto border border-slate-200 flex flex-col max-h-[92vh]"
+            >
+              {/* Modal Top Header */}
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-xs uppercase tracking-wide">
+                    {detailProduct.marca}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider hidden xs:inline">
+                    • {detailProduct.corte}
+                  </span>
+                </div>
+
                 <button
-                  onClick={() => {
-                    window.history.back();
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm border border-slate-200 transition-all active:scale-95"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Volver al Catálogo</span>
-                </button>
-                <span className="text-xs font-extrabold text-amber-600 uppercase tracking-widest hidden sm:block">
-                  Detalle del Producto
-                </span>
-                <button
-                  onClick={() => {
-                    window.history.back();
-                  }}
-                  className="p-2 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 border border-slate-200 transition-all"
-                  aria-label="Cerrar"
+                  onClick={handleCloseDetail}
+                  className="p-2 rounded-full bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 transition-all active:scale-95 shadow-sm"
+                  aria-label="Cerrar modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
-                {/* Product Image - clickable for zoom */}
-                <div className="relative bg-slate-50 rounded-3xl border border-slate-200 overflow-hidden flex items-center justify-center p-4 sm:p-6 min-h-[350px] sm:min-h-[450px] cursor-zoom-in group shadow-sm"
-                  onClick={() => handleZoomOpen(modalColor.imagen)}
-                >
-                  <img
-                    src={modalColor.imagen}
-                    alt={`${detailProduct.nombreCompleto} ${modalColor.nombre}`}
-                    className="max-w-full max-h-[450px] object-contain object-center drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
+              {/* Modal Scrollable Body */}
+              <div className="p-5 sm:p-8 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                  {/* Left Column: Image Gallery with Auto-Transition Slideshow */}
+                  <DetailModalGallery
+                    product={detailProduct}
+                    selectedColor={modalColor}
+                    onZoom={handleZoomOpen}
                   />
-                  <div className="absolute top-4 left-4 flex flex-col gap-1.5">
-                    <span className="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-sm">
-                      {detailProduct.marca}
-                    </span>
-                    {detailProduct.stockLimitado && (
-                      <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
-                        Stock Limitado
-                      </span>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 right-4 z-10">
-                    <span className="px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md text-slate-700 font-bold text-xs border border-slate-200 shadow-md flex items-center gap-1.5">
-                      <ZoomIn className="w-3.5 h-3.5 text-amber-600" />
-                      Toca para ampliar
-                    </span>
-                  </div>
-                </div>
 
-                {/* Product Info */}
-                <div className="flex flex-col justify-between space-y-6">
-                  
-                  <div className="space-y-5">
-                    <div>
-                      <span className="text-xs font-extrabold text-blue-700 uppercase tracking-wider block mb-1">
-                        Corte: {detailProduct.corte}
-                      </span>
-                      <h3 className="text-2xl sm:text-3xl font-black font-title text-slate-900">
-                        {detailProduct.nombreCompleto}
-                      </h3>
-                      <div className="flex items-center gap-3 mt-3">
-                        {detailProduct.precio && detailProduct.precio > 0 ? (
-                          <>
-                            <span className="text-3xl font-black text-amber-600 font-title">
-                              {formatPrice(detailProduct.precio)}
-                            </span>
-                            {detailProduct.precioOriginal && detailProduct.precioOriginal > 0 && (
-                              <span className="text-sm text-slate-400 line-through font-semibold">
-                                {formatPrice(detailProduct.precioOriginal)}
+                  {/* Right Column: Product Info & Configuration */}
+                  <div className="flex flex-col justify-between space-y-6">
+                    <div className="space-y-5">
+                      <div>
+                        <span className="text-xs font-extrabold text-blue-700 uppercase tracking-wider block mb-1">
+                          Corte: {detailProduct.corte}
+                        </span>
+                        <h3 className="text-2xl sm:text-3xl font-black font-title text-slate-900 leading-tight">
+                          {detailProduct.nombreCompleto}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-3">
+                          {detailProduct.precio && detailProduct.precio > 0 ? (
+                            <>
+                              <span className="text-3xl font-black text-amber-600 font-title">
+                                {formatPrice(detailProduct.precio)}
                               </span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-sm font-extrabold px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
-                            Precio a consultar por WhatsApp
-                          </span>
-                        )}
+                              {detailProduct.precioOriginal && detailProduct.precioOriginal > 0 && (
+                                <span className="text-sm text-slate-400 line-through font-semibold">
+                                  {formatPrice(detailProduct.precioOriginal)}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-sm font-extrabold px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
+                              Precio a consultar por WhatsApp
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                      {detailProduct.descripcion}
-                    </p>
+                      <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                        {detailProduct.descripcion}
+                      </p>
 
-                    {/* Product Details List */}
-                    {detailProduct.detalles && detailProduct.detalles.length > 0 && (
-                      <div className="space-y-2">
-                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Características:</span>
-                        <ul className="space-y-1.5">
-                          {detailProduct.detalles.map((d, i) => (
-                            <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
-                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                              <span>{d}</span>
-                            </li>
+                      {/* Product Details List */}
+                      {detailProduct.detalles && detailProduct.detalles.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Características:</span>
+                          <ul className="space-y-1.5">
+                            {detailProduct.detalles.map((d, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
+                                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                                <span>{d}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Color selection */}
+                      <div className="pt-2 border-t border-slate-100">
+                        <label className="text-sm font-bold text-slate-700 block mb-3">
+                          Color Seleccionado: <strong className="text-amber-700">{modalColor.nombre}</strong>
+                        </label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {detailProduct.colores.map(c => (
+                            <button
+                              key={c.nombre}
+                              onClick={() => setModalColor(c)}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                                modalColor.nombre === c.nombre
+                                  ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm ring-2 ring-amber-400/30'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
+                              <span>{c.nombre}</span>
+                            </button>
                           ))}
-                        </ul>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Color selection */}
-                    <div className="pt-2 border-t border-slate-100">
-                      <label className="text-sm font-bold text-slate-700 block mb-3">
-                        Color: <strong className="text-amber-700">{modalColor.nombre}</strong>
-                      </label>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {detailProduct.colores.map(c => (
+                      {/* Size selection */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <label className="text-sm font-bold text-slate-700">Selecciona tu Talla:</label>
                           <button
-                            key={c.nombre}
-                            onClick={() => setModalColor(c)}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
-                              modalColor.nombre === c.nombre
-                                ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm ring-2 ring-amber-400/30'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                            }`}
+                            onClick={() => setShowSizeGuide(true)}
+                            className="text-xs text-amber-700 hover:underline font-extrabold flex items-center gap-1"
                           >
-                            <span className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
-                            <span>{c.nombre}</span>
+                            <Ruler className="w-3.5 h-3.5" /> Guía de Tallas
                           </button>
-                        ))}
+                        </div>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          {detailProduct.tallasDisponibles.map(t => (
+                            <button
+                              key={t}
+                              onClick={() => setModalSize(t)}
+                              className={`min-w-[48px] h-12 px-4 rounded-xl text-sm font-extrabold transition-all border ${
+                                modalSize === t
+                                  ? 'bg-amber-500 text-slate-950 border-amber-400 scale-105 shadow-md ring-2 ring-amber-400/30'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
                     </div>
 
-                    {/* Size selection */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-bold text-slate-700">Selecciona tu Talla:</label>
-                        <button
-                          onClick={() => setShowSizeGuide(true)}
-                          className="text-xs text-amber-700 hover:underline font-extrabold flex items-center gap-1"
-                        >
-                          <Ruler className="w-3.5 h-3.5" /> Guía de Tallas
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        {detailProduct.tallasDisponibles.map(t => (
-                          <button
-                            key={t}
-                            onClick={() => setModalSize(t)}
-                            className={`min-w-[48px] h-12 px-4 rounded-xl text-sm font-extrabold transition-all border ${
-                              modalSize === t
-                                ? 'bg-amber-500 text-slate-950 border-amber-400 scale-105 shadow-md ring-2 ring-amber-400/30'
-                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
+                    {/* Action Buttons inside Modal */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-slate-200">
+                      <button
+                        onClick={() => {
+                          addToCart(detailProduct, modalColor, modalSize);
+                          handleCloseDetail();
+                        }}
+                        className="py-4 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+                      >
+                        <ShoppingBag className="w-5 h-5" />
+                        <span>Añadir al Pedido</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          handleDirectWhatsAppOrder(detailProduct, modalColor, modalSize);
+                        }}
+                        className="py-4 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+                      >
+                        <Smartphone className="w-5 h-5" />
+                        <span>Pedir por WhatsApp</span>
+                      </button>
                     </div>
 
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-slate-200">
-                    <button
-                      onClick={() => {
-                        addToCart(detailProduct, modalColor, modalSize);
-                      }}
-                      className="py-4 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
-                    >
-                      <ShoppingBag className="w-5 h-5" />
-                      <span>Añadir al Pedido</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        handleDirectWhatsAppOrder(detailProduct, modalColor, modalSize);
-                      }}
-                      className="py-4 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
-                    >
-                      <Smartphone className="w-5 h-5" />
-                      <span>Pedir por WhatsApp</span>
-                    </button>
-                  </div>
-
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -1130,7 +1278,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
+            className="fixed inset-0 z-[70] bg-black/95 flex items-center justify-center"
             onClick={(e) => { if (e.target === e.currentTarget) { setZoomImage(null); } }}
           >
             {/* Close button */}
@@ -1193,7 +1341,7 @@ export default function App() {
       {/* 📐 SIZE GUIDE MODAL */}
       <AnimatePresence>
         {showSizeGuide && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[55] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
