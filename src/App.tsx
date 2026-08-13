@@ -906,27 +906,27 @@ export default function App() {
                             />
 
                             {/* Card Content Details - Light Mode */}
-                            <div className="p-5 flex-1 flex flex-col justify-between space-y-4 bg-white">
+                            <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3 bg-white">
                               <div>
                                 {/* Fit tag & price in non-colliding flex header */}
-                                <div className="flex items-center justify-between gap-3 mb-2">
-                                  <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200 text-xs font-black uppercase tracking-wider">
+                                <div className="flex items-center justify-between gap-2 mb-1.5">
+                                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
                                     {product.corte}
                                   </span>
                                   <div className="text-right shrink-0">
                                     {precioFormateado ? (
                                       <div className="flex items-baseline justify-end gap-1.5">
                                         {product.precioOriginal && product.precioOriginal > 0 && (
-                                          <span className="text-xs text-slate-400 line-through font-semibold">
+                                          <span className="text-[11px] text-slate-400 line-through font-normal">
                                             {formatPrice(product.precioOriginal)}
                                           </span>
                                         )}
-                                        <span className="text-xl font-black text-amber-600 font-title">
+                                        <span className="text-base sm:text-lg font-bold text-amber-600 font-title">
                                           {precioFormateado}
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-xs font-extrabold px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
                                         Consultar
                                       </span>
                                     )}
@@ -936,42 +936,42 @@ export default function App() {
                                 {/* Product Title */}
                                 <h4 
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer leading-snug"
+                                  className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer leading-snug"
                                 >
                                   {product.nombreCompleto}
                                 </h4>
 
-                                <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                                <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
                                   {product.descripcion}
                                 </p>
                               </div>
 
                               {/* Colors & Sizes Information Badge */}
-                              <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
-                                <span className="font-semibold text-slate-600">
-                                  <strong className="text-amber-700 font-bold">{product.colores.length}</strong> {product.colores.length === 1 ? 'color disponible' : 'colores disponibles'}
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2.5 border-t border-slate-100">
+                                <span className="text-slate-600">
+                                  <strong className="text-amber-700 font-semibold">{product.colores.length}</strong> {product.colores.length === 1 ? 'color' : 'colores'}
                                 </span>
-                                <span className="font-semibold text-slate-600">
-                                  Tallas: <strong className="text-slate-800 font-bold">{product.tallasDisponibles.join(', ')}</strong>
+                                <span className="text-slate-600">
+                                  Tallas: <strong className="text-slate-800 font-semibold">{product.tallasDisponibles.join(', ')}</strong>
                                 </span>
                               </div>
 
                               {/* Card Action Buttons: Open Modal to Configure Color & Size */}
-                              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                              <div className="grid grid-cols-2 gap-2 pt-0.5">
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-3 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
-                                  <ShoppingBag className="w-4 h-4" />
+                                  <ShoppingBag className="w-3.5 h-3.5" />
                                   <span>Añadir</span>
                                 </button>
 
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
-                                  <Smartphone className="w-4 h-4" />
-                                  <span>Pedir WhatsApp</span>
+                                  <Smartphone className="w-3.5 h-3.5" />
+                                  <span>WhatsApp</span>
                                 </button>
                               </div>
 
@@ -1138,46 +1138,46 @@ export default function App() {
                   />
 
                   {/* Right Column: Product Info & Configuration */}
-                  <div className="flex flex-col justify-between space-y-6">
-                    <div className="space-y-5">
+                  <div className="flex flex-col justify-between space-y-5">
+                    <div className="space-y-4">
                       <div>
-                        <span className="text-xs font-extrabold text-blue-700 uppercase tracking-wider block mb-1">
+                        <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block mb-1">
                           Corte: {detailProduct.corte}
                         </span>
-                        <h3 className="text-2xl sm:text-3xl font-black font-title text-slate-900 leading-tight">
+                        <h3 className="text-xl sm:text-2xl font-bold font-title text-slate-900 leading-snug">
                           {detailProduct.nombreCompleto}
                         </h3>
-                        <div className="flex items-center gap-3 mt-3">
+                        <div className="flex items-center gap-2.5 mt-2.5">
                           {detailProduct.precio && detailProduct.precio > 0 ? (
                             <>
-                              <span className="text-3xl font-black text-amber-600 font-title">
+                              <span className="text-2xl sm:text-3xl font-bold text-amber-600 font-title">
                                 {formatPrice(detailProduct.precio)}
                               </span>
                               {detailProduct.precioOriginal && detailProduct.precioOriginal > 0 && (
-                                <span className="text-sm text-slate-400 line-through font-semibold">
+                                <span className="text-xs sm:text-sm text-slate-400 line-through font-normal">
                                   {formatPrice(detailProduct.precioOriginal)}
                                 </span>
                               )}
                             </>
                           ) : (
-                            <span className="text-sm font-extrabold px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
+                            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
                               Precio a consultar por WhatsApp
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                         {detailProduct.descripcion}
                       </p>
 
                       {/* Product Details List */}
                       {detailProduct.detalles && detailProduct.detalles.length > 0 && (
-                        <div className="space-y-2">
-                          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Características:</span>
-                          <ul className="space-y-1.5">
+                        <div className="space-y-1.5">
+                          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Características:</span>
+                          <ul className="space-y-1">
                             {detailProduct.detalles.map((d, i) => (
-                              <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
+                              <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
                                 <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                                 <span>{d}</span>
                               </li>
@@ -1188,7 +1188,7 @@ export default function App() {
 
                       {/* Color selection */}
                       <div className="pt-2 border-t border-slate-100">
-                        <label className="text-sm font-bold text-slate-700 block mb-3">
+                        <label className="text-xs font-bold text-slate-700 block mb-2.5">
                           Color Seleccionado: <strong className="text-amber-700">{modalColor.nombre}</strong>
                         </label>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1196,13 +1196,13 @@ export default function App() {
                             <button
                               key={c.nombre}
                               onClick={() => setModalColor(c)}
-                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                              className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2 border transition-all ${
                                 modalColor.nombre === c.nombre
-                                  ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm ring-2 ring-amber-400/30'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm ring-2 ring-amber-400/30 font-bold'
                                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                               }`}
                             >
-                              <span className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
+                              <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
                               <span>{c.nombre}</span>
                             </button>
                           ))}
@@ -1211,21 +1211,21 @@ export default function App() {
 
                       {/* Size selection */}
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <label className="text-sm font-bold text-slate-700">Selecciona tu Talla:</label>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <label className="text-xs font-bold text-slate-700">Selecciona tu Talla:</label>
                           <button
                             onClick={() => setShowSizeGuide(true)}
-                            className="text-xs text-amber-700 hover:underline font-extrabold flex items-center gap-1"
+                            className="text-[11px] text-amber-700 hover:underline font-bold flex items-center gap-1"
                           >
                             <Ruler className="w-3.5 h-3.5" /> Guía de Tallas
                           </button>
                         </div>
-                        <div className="flex items-center gap-2.5 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {detailProduct.tallasDisponibles.map(t => (
                             <button
                               key={t}
                               onClick={() => setModalSize(t)}
-                              className={`min-w-[48px] h-12 px-4 rounded-xl text-sm font-extrabold transition-all border ${
+                              className={`min-w-[42px] h-10 px-3.5 rounded-xl text-xs font-bold transition-all border ${
                                 modalSize === t
                                   ? 'bg-amber-500 text-slate-950 border-amber-400 scale-105 shadow-md ring-2 ring-amber-400/30'
                                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -1240,15 +1240,15 @@ export default function App() {
                     </div>
 
                     {/* Action Buttons inside Modal */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-slate-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-4 border-t border-slate-200">
                       <button
                         onClick={() => {
                           addToCart(detailProduct, modalColor, modalSize);
                           handleCloseDetail();
                         }}
-                        className="py-4 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+                        className="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
                       >
-                        <ShoppingBag className="w-5 h-5" />
+                        <ShoppingBag className="w-4 h-4" />
                         <span>Añadir al Pedido</span>
                       </button>
 
@@ -1256,9 +1256,9 @@ export default function App() {
                         onClick={() => {
                           handleDirectWhatsAppOrder(detailProduct, modalColor, modalSize);
                         }}
-                        className="py-4 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+                        className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
                       >
-                        <Smartphone className="w-5 h-5" />
+                        <Smartphone className="w-4 h-4" />
                         <span>Pedir por WhatsApp</span>
                       </button>
                     </div>
