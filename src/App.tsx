@@ -354,98 +354,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* 👑 HERO SECTION - LIGHT MODE */}
-      <section className="relative overflow-hidden py-10 sm:py-14 bg-gradient-to-b from-white via-slate-50 to-amber-50/20 border-b border-slate-200/80">
-        
-        {/* Background Decorative Glows */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            {/* Left Hero Text */}
-            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                <span>Colección Completa Denim & Moda 2026</span>
-              </div>
-
-              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black font-title tracking-tight text-slate-900 leading-tight">
-                EL ESTILO DEL JEANS <br />
-                <span className="text-amber-600 font-serif italic font-normal">hecho a tu medida.</span>
-              </h2>
-
-              <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto lg:mx-0 font-medium leading-relaxed">
-                Descubre nuestra selección de jeans, dril, shorts y casacas de las mejores marcas: <strong className="text-slate-900 font-bold">Lois Originals, Element, Pionier y Bronco</strong>. 
-                Elige tu categoría en las ventanas interactivas a continuación y realiza tu pedido directo a nuestro WhatsApp en 1 click.
-              </p>
-
-              {/* Stats badges */}
-              <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto lg:mx-0">
-                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
-                  <span className="block text-xl font-bold font-title text-amber-600">5</span>
-                  <span className="text-[11px] text-slate-500 uppercase font-bold">Categorías</span>
-                </div>
-                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
-                  <span className="block text-xl font-bold font-title text-blue-600">17+</span>
-                  <span className="text-[11px] text-slate-500 uppercase font-bold">Modelos Top</span>
-                </div>
-                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
-                  <span className="block text-xl font-bold font-title text-emerald-600">100%</span>
-                  <span className="text-[11px] text-slate-500 uppercase font-bold">Calidad Premium</span>
-                </div>
-                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
-                  <span className="block text-xl font-bold font-title text-amber-600">Nacional</span>
-                  <span className="text-[11px] text-slate-500 uppercase font-bold">Envíos por Agencia</span>
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
-                <a
-                  href="#categorias-ventanas"
-                  className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
-                >
-                  <Grid className="w-4 h-4" />
-                  <span>Explorar Categorías</span>
-                </a>
-
-                <button
-                  onClick={() => setShowSizeGuide(true)}
-                  className="px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm border border-slate-300 transition-all flex items-center gap-2 shadow-sm"
-                >
-                  <Ruler className="w-4 h-4 text-amber-600" />
-                  <span>Ver Guía de Tallas</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Right Hero Image Card */}
-            <div className="lg:col-span-5 relative flex justify-center">
-              <div className="relative w-full max-w-sm sm:max-w-md rounded-3xl overflow-hidden bg-white p-3 border border-slate-200 shadow-xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
-                <div className="w-full h-80 sm:h-96 bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center">
-                  <img 
-                    src={SHOWCASE_MODEL_IMAGE} 
-                    alt="Plumas Jeans Lookbook Showcase" 
-                    className="w-full h-full object-cover object-center"
-                  />
-                </div>
-                <div className="absolute inset-x-3 bottom-3 p-4 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent rounded-b-2xl flex items-center justify-between text-white">
-                  <div>
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest block">Lookbook Denim 2026</span>
-                    <span className="text-sm font-semibold">Tendencia Urbana & Confort</span>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 text-xs font-extrabold">
-                    PREMIUM
-                  </span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
 
       {/* 🖼️ CATEGORY WINDOWS GRID SECTION - LIGHT MODE */}
       <section id="categorias-ventanas" className="py-12 bg-white border-b border-slate-200">
@@ -1002,9 +910,10 @@ export default function App() {
             >
               <button
                 onClick={() => setDetailProduct(null)}
-                className="absolute top-4 right-4 z-30 p-2 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 transition-all"
+                className="absolute top-3 right-3 z-30 p-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 border-2 border-red-500 transition-all active:scale-90"
+                aria-label="Cerrar"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" strokeWidth={3} />
               </button>
 
               <div className="grid grid-cols-1 md:grid-cols-2">
@@ -1483,6 +1392,99 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 👑 HERO SECTION - MOVED TO BOTTOM */}
+      <section className="relative overflow-hidden py-10 sm:py-14 bg-gradient-to-b from-white via-slate-50 to-amber-50/20 border-b border-slate-200/80">
+        
+        {/* Background Decorative Glows */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Hero Text */}
+            <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>Colección Completa Denim & Moda 2026</span>
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black font-title tracking-tight text-slate-900 leading-tight">
+                EL ESTILO DEL JEANS <br />
+                <span className="text-amber-600 font-serif italic font-normal">hecho a tu medida.</span>
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto lg:mx-0 font-medium leading-relaxed">
+                Descubre nuestra selección de jeans, dril, shorts y casacas de las mejores marcas: <strong className="text-slate-900 font-bold">Lois Originals, Element, Pionier y Bronco</strong>. 
+                Elige tu categoría en las ventanas interactivas a continuación y realiza tu pedido directo a nuestro WhatsApp en 1 click.
+              </p>
+
+              {/* Stats badges */}
+              <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto lg:mx-0">
+                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
+                  <span className="block text-xl font-bold font-title text-amber-600">5</span>
+                  <span className="text-[11px] text-slate-500 uppercase font-bold">Categorías</span>
+                </div>
+                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
+                  <span className="block text-xl font-bold font-title text-blue-600">17+</span>
+                  <span className="text-[11px] text-slate-500 uppercase font-bold">Modelos Top</span>
+                </div>
+                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
+                  <span className="block text-xl font-bold font-title text-emerald-600">100%</span>
+                  <span className="text-[11px] text-slate-500 uppercase font-bold">Calidad Premium</span>
+                </div>
+                <div className="bg-white border border-slate-200 p-3 rounded-2xl text-center shadow-sm">
+                  <span className="block text-xl font-bold font-title text-amber-600">Nacional</span>
+                  <span className="text-[11px] text-slate-500 uppercase font-bold">Envíos por Agencia</span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                <a
+                  href="#categorias-ventanas"
+                  className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                >
+                  <Grid className="w-4 h-4" />
+                  <span>Explorar Categorías</span>
+                </a>
+
+                <button
+                  onClick={() => setShowSizeGuide(true)}
+                  className="px-5 py-3 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm border border-slate-300 transition-all flex items-center gap-2 shadow-sm"
+                >
+                  <Ruler className="w-4 h-4 text-amber-600" />
+                  <span>Ver Guía de Tallas</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Hero Image Card */}
+            <div className="lg:col-span-5 relative flex justify-center">
+              <div className="relative w-full max-w-sm sm:max-w-md rounded-3xl overflow-hidden bg-white p-3 border border-slate-200 shadow-xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                <div className="w-full h-80 sm:h-96 bg-slate-100 rounded-2xl overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={SHOWCASE_MODEL_IMAGE} 
+                    alt="Plumas Jeans Lookbook Showcase" 
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <div className="absolute inset-x-3 bottom-3 p-4 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent rounded-b-2xl flex items-center justify-between text-white">
+                  <div>
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-widest block">Lookbook Denim 2026</span>
+                    <span className="text-sm font-semibold">Tendencia Urbana & Confort</span>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 text-xs font-extrabold">
+                    PREMIUM
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
       {/* 🛡️ FOOTER - GROUNDED NAVY CONTRAST */}
       <footer className="bg-slate-900 border-t border-slate-800 py-12 text-slate-300 text-xs">
