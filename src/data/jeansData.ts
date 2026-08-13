@@ -478,7 +478,7 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
 export const STORE_INFO = {
   nombre: "PLUMAS JEANS",
   slogan: "Catálogo Digital Exclusivo de Jeans & Moda Premium",
-  telefonoWhatsApp: "51993399915",
+  telefonoWhatsApp: "51970810966",
   mensajeWhatsAppBase: "¡Hola Plumas Jeans! Vengo de su catálogo digital y deseo información sobre:",
   envios: "Envíos a todo el Perú (Olva Courier, Shalom, Agencia)",
   garantia: "100% Calidad Garantizada & Cambio de Talla",

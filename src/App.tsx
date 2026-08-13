@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { 
   ShoppingBag, Plus, Minus, X, Trash2, Search, Sparkles, Filter, 
   Ruler, Truck, ShieldCheck, MapPin, CheckCircle, Smartphone, 
   ExternalLink, ChevronRight, Heart, Star, Tag, RefreshCw, Eye, MessageCircle,
-  Layers, Check, ArrowRight, Grid, User, CreditCard, Building2, Package
+  Layers, Check, ArrowRight, Grid, User, CreditCard, Building2, Package,
+  ArrowLeft, ZoomIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -60,10 +61,19 @@ export default function App() {
   // Selected Active View per product id ('product' | 'poster')
   const [activeCardViews, setActiveCardViews] = useState<Record<string, 'product' | 'poster'>>({});
 
-  // Product detail modal state
+  // Product detail page-view state (replaces modal)
   const [detailProduct, setDetailProduct] = useState<JeansProduct | null>(null);
   const [modalColor, setModalColor] = useState<ColorVariant | null>(null);
   const [modalSize, setModalSize] = useState<number | string>(30);
+  const savedScrollRef = useRef<number>(0);
+
+  // Image zoom lightbox state
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
 
   // Cart & Checkout drawer state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -255,10 +265,59 @@ export default function App() {
     window.open(`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encodedMsg}`, '_blank');
   };
 
-  const handleOpenDetailModal = (product: JeansProduct, color?: ColorVariant) => {
+  const handleOpenDetailModal = useCallback((product: JeansProduct, color?: ColorVariant) => {
+    savedScrollRef.current = window.scrollY;
     setDetailProduct(product);
     setModalColor(color || product.colores[0]);
     setModalSize(product.tallasDisponibles[0]);
+    window.history.pushState({ productDetail: true }, '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setDetailProduct(null);
+    setZoomImage(null);
+    setTimeout(() => {
+      window.scrollTo({ top: savedScrollRef.current, behavior: 'smooth' });
+    }, 50);
+  }, []);
+
+  // Handle browser back button to close detail view
+  useEffect(() => {
+    const onPopState = () => {
+      if (detailProduct) {
+        handleCloseDetail();
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [detailProduct, handleCloseDetail]);
+
+  // Image zoom handlers
+  const handleZoomOpen = (imgSrc: string) => {
+    setZoomImage(imgSrc);
+    setZoomScale(1);
+    setZoomPos({ x: 0, y: 0 });
+  };
+
+  const handleZoomWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoomScale(prev => Math.max(0.5, Math.min(5, prev - e.deltaY * 0.002)));
+  };
+
+  const handleZoomPointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - zoomPos.x, y: e.clientY - zoomPos.y });
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handleZoomPointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setZoomPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handleZoomPointerUp = () => {
+    setIsDragging(false);
   };
 
   const selectCategoryAndScroll = (catId: string) => {
@@ -609,7 +668,7 @@ export default function App() {
                       No hay productos disponibles bajo esta selección.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
                       {catProducts.map(product => {
                         const activeColor = getActiveColor(product);
                         const viewMode = activeCardViews[product.id] || 'product';
@@ -898,91 +957,138 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* 🔍 PRODUCT DETAIL MODAL - LIGHT MODE */}
+      {/* 🔍 PRODUCT DETAIL FULL-PAGE VIEW */}
       <AnimatePresence>
         {detailProduct && modalColor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-2xl my-8"
-            >
-              <button
-                onClick={() => setDetailProduct(null)}
-                className="absolute top-3 right-3 z-30 p-2.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 border-2 border-red-500 transition-all active:scale-90"
-                aria-label="Cerrar"
-              >
-                <X className="w-6 h-6" strokeWidth={3} />
-              </button>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-white overflow-y-auto"
+          >
+            {/* Sticky Back Bar */}
+            <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    window.history.back();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm border border-slate-200 transition-all active:scale-95"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Volver al Catálogo</span>
+                </button>
+                <span className="text-xs font-extrabold text-amber-600 uppercase tracking-widest hidden sm:block">
+                  Detalle del Producto
+                </span>
+                <button
+                  onClick={() => {
+                    window.history.back();
+                  }}
+                  className="p-2 rounded-full bg-slate-100 hover:bg-red-100 text-slate-500 hover:text-red-600 border border-slate-200 transition-all"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2">
-                {/* Modal Product Image */}
-                <div className="relative h-80 md:h-full bg-slate-100 min-h-[350px] flex items-center justify-center p-4">
+            <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
+                {/* Product Image - clickable for zoom */}
+                <div className="relative bg-slate-50 rounded-3xl border border-slate-200 overflow-hidden flex items-center justify-center p-4 sm:p-6 min-h-[350px] sm:min-h-[450px] cursor-zoom-in group shadow-sm"
+                  onClick={() => handleZoomOpen(modalColor.imagen)}
+                >
                   <img
                     src={modalColor.imagen}
                     alt={`${detailProduct.nombreCompleto} ${modalColor.nombre}`}
-                    className="max-w-full max-h-full object-contain object-center drop-shadow-xl"
+                    className="max-w-full max-h-[450px] object-contain object-center drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute top-4 left-4">
+                  <div className="absolute top-4 left-4 flex flex-col gap-1.5">
                     <span className="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-sm">
                       {detailProduct.marca}
+                    </span>
+                    {detailProduct.stockLimitado && (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
+                        Stock Limitado
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute bottom-4 right-4 z-10">
+                    <span className="px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur-md text-slate-700 font-bold text-xs border border-slate-200 shadow-md flex items-center gap-1.5">
+                      <ZoomIn className="w-3.5 h-3.5 text-amber-600" />
+                      Toca para ampliar
                     </span>
                   </div>
                 </div>
 
-                {/* Modal Product Info */}
-                <div className="p-6 md:p-8 flex flex-col justify-between space-y-6 bg-white">
+                {/* Product Info */}
+                <div className="flex flex-col justify-between space-y-6">
                   
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
                       <span className="text-xs font-extrabold text-blue-700 uppercase tracking-wider block mb-1">
                         Corte: {detailProduct.corte}
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black font-title text-slate-900">
+                      <h3 className="text-2xl sm:text-3xl font-black font-title text-slate-900">
                         {detailProduct.nombreCompleto}
                       </h3>
-                      <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-3 mt-3">
                         {detailProduct.precio && detailProduct.precio > 0 ? (
                           <>
-                            <span className="text-2xl font-black text-amber-600 font-title">
+                            <span className="text-3xl font-black text-amber-600 font-title">
                               {formatPrice(detailProduct.precio)}
                             </span>
                             {detailProduct.precioOriginal && detailProduct.precioOriginal > 0 && (
-                              <span className="text-xs text-slate-400 line-through font-semibold">
+                              <span className="text-sm text-slate-400 line-through font-semibold">
                                 {formatPrice(detailProduct.precioOriginal)}
                               </span>
                             )}
                           </>
                         ) : (
-                          <span className="text-xs font-extrabold px-3 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
+                          <span className="text-sm font-extrabold px-4 py-2 rounded-xl bg-amber-100 text-amber-900 border border-amber-300">
                             Precio a consultar por WhatsApp
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
                       {detailProduct.descripcion}
                     </p>
 
+                    {/* Product Details List */}
+                    {detailProduct.detalles && detailProduct.detalles.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Características:</span>
+                        <ul className="space-y-1.5">
+                          {detailProduct.detalles.map((d, i) => (
+                            <li key={i} className="flex items-start gap-2 text-xs text-slate-600 font-medium">
+                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                              <span>{d}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
                     {/* Color selection */}
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-2">
-                        Color Seleccionado: <strong className="text-amber-700">{modalColor.nombre}</strong>
+                    <div className="pt-2 border-t border-slate-100">
+                      <label className="text-sm font-bold text-slate-700 block mb-3">
+                        Color: <strong className="text-amber-700">{modalColor.nombre}</strong>
                       </label>
                       <div className="flex items-center gap-2 flex-wrap">
                         {detailProduct.colores.map(c => (
                           <button
                             key={c.nombre}
                             onClick={() => setModalColor(c)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
                               modalColor.nombre === c.nombre
-                                ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm'
+                                ? 'bg-amber-100 text-amber-900 border-amber-400 shadow-sm ring-2 ring-amber-400/30'
                                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
-                            <span className="w-3.5 h-3.5 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
+                            <span className="w-4 h-4 rounded-full border border-black/20" style={{ backgroundColor: c.hexColor }} />
                             <span>{c.nombre}</span>
                           </button>
                         ))}
@@ -991,23 +1097,23 @@ export default function App() {
 
                     {/* Size selection */}
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs font-bold text-slate-700">Selecciona tu Talla:</label>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-sm font-bold text-slate-700">Selecciona tu Talla:</label>
                         <button
                           onClick={() => setShowSizeGuide(true)}
-                          className="text-[11px] text-amber-700 hover:underline font-extrabold flex items-center gap-1"
+                          className="text-xs text-amber-700 hover:underline font-extrabold flex items-center gap-1"
                         >
                           <Ruler className="w-3.5 h-3.5" /> Guía de Tallas
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2.5 flex-wrap">
                         {detailProduct.tallasDisponibles.map(t => (
                           <button
                             key={t}
                             onClick={() => setModalSize(t)}
-                            className={`min-w-[44px] h-11 px-3 rounded-xl text-xs font-extrabold transition-all border ${
+                            className={`min-w-[48px] h-12 px-4 rounded-xl text-sm font-extrabold transition-all border ${
                               modalSize === t
-                                ? 'bg-amber-500 text-slate-950 border-amber-400 scale-105 shadow-md'
+                                ? 'bg-amber-500 text-slate-950 border-amber-400 scale-105 shadow-md ring-2 ring-amber-400/30'
                                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
@@ -1019,35 +1125,100 @@ export default function App() {
 
                   </div>
 
-                  {/* Modal Footer Buttons */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-slate-200">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-5 border-t border-slate-200">
                     <button
                       onClick={() => {
                         addToCart(detailProduct, modalColor, modalSize);
-                        setDetailProduct(null);
                       }}
-                      className="py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md"
+                      className="py-4 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
                     >
-                      <ShoppingBag className="w-4 h-4" />
+                      <ShoppingBag className="w-5 h-5" />
                       <span>Añadir al Pedido</span>
                     </button>
 
                     <button
                       onClick={() => {
                         handleDirectWhatsAppOrder(detailProduct, modalColor, modalSize);
-                        setDetailProduct(null);
                       }}
-                      className="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md"
+                      className="py-4 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
                     >
-                      <Smartphone className="w-4 h-4" />
+                      <Smartphone className="w-5 h-5" />
                       <span>Pedir por WhatsApp</span>
                     </button>
                   </div>
 
                 </div>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔎 FULLSCREEN IMAGE ZOOM LIGHTBOX */}
+      <AnimatePresence>
+        {zoomImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center"
+            onClick={(e) => { if (e.target === e.currentTarget) { setZoomImage(null); } }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setZoomImage(null)}
+              className="absolute top-4 right-4 z-10 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all backdrop-blur-md"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Zoom controls */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+              <button
+                onClick={() => setZoomScale(prev => Math.max(0.5, prev - 0.5))}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <span className="text-white text-xs font-bold min-w-[50px] text-center">{Math.round(zoomScale * 100)}%</span>
+              <button
+                onClick={() => setZoomScale(prev => Math.min(5, prev + 0.5))}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => { setZoomScale(1); setZoomPos({ x: 0, y: 0 }); }}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+              >
+                Reset
+              </button>
+            </div>
+
+            {/* Zoomable Image */}
+            <div
+              ref={zoomContainerRef}
+              className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing touch-none"
+              onWheel={handleZoomWheel}
+              onPointerDown={handleZoomPointerDown}
+              onPointerMove={handleZoomPointerMove}
+              onPointerUp={handleZoomPointerUp}
+            >
+              <img
+                src={zoomImage}
+                alt="Imagen ampliada"
+                className="max-w-none select-none pointer-events-none"
+                style={{
+                  transform: `translate(${zoomPos.x}px, ${zoomPos.y}px) scale(${zoomScale})`,
+                  transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                  maxHeight: '90vh',
+                  maxWidth: '90vw',
+                }}
+                draggable={false}
+              />
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -1258,7 +1429,7 @@ export default function App() {
                         <input
                           type="text"
                           maxLength={9}
-                          placeholder="Ej. 993399915"
+                          placeholder="Ej. 970810966"
                           value={customerData.telefono}
                           onChange={(e) => {
                             const val = e.target.value.replace(/\D/g, '').slice(0, 9);
@@ -1524,7 +1695,7 @@ export default function App() {
             <div className="space-y-2">
               <h5 className="text-xs font-bold text-amber-400 uppercase tracking-wider">Atención al Cliente</h5>
               <p className="text-slate-300 font-medium">Horarios: Lunes a Sábado 9:00 am - 8:00 pm</p>
-              <p className="text-slate-300 font-medium">WhatsApp: +51 993 399 915</p>
+              <p className="text-slate-300 font-medium">WhatsApp: +51 970 810 966</p>
               <div className="pt-2 flex items-center gap-2">
                 <span className="px-2 py-1 rounded bg-purple-900/50 text-purple-300 border border-purple-500/30 text-[10px] font-bold">Yape</span>
                 <span className="px-2 py-1 rounded bg-cyan-900/50 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold">Plin</span>
