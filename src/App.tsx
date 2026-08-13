@@ -765,71 +765,39 @@ export default function App() {
                                 {/* Product Title */}
                                 <h4 
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer line-clamp-1"
+                                  className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer"
                                 >
                                   {product.nombreCompleto}
                                 </h4>
 
-                                <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-medium">
+                                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed font-medium">
                                   {product.descripcion}
                                 </p>
                               </div>
 
-                              {/* Color Swatches Selector */}
-                              <div className="space-y-2 pt-2 border-t border-slate-100">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-slate-500 text-[11px] font-semibold">Variantes de Color:</span>
-                                  <span className="text-amber-700 text-[11px] font-bold">{product.colores.length} colores</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  {product.colores.map((color) => {
-                                    const isSelected = activeColor.nombre === color.nombre;
-                                    return (
-                                      <button
-                                        key={color.nombre}
-                                        onClick={() => handleSelectCardColor(product.id, color)}
-                                        className={`group/swatch relative w-7 h-7 rounded-full transition-all duration-200 p-0.5 border ${
-                                          isSelected
-                                            ? 'border-amber-500 scale-110 shadow-md shadow-amber-500/30'
-                                            : 'border-slate-300 hover:border-slate-500 opacity-80 hover:opacity-100'
-                                        }`}
-                                        title={color.nombre}
-                                      >
-                                        <span 
-                                          className="block w-full h-full rounded-full border border-black/20" 
-                                          style={{ backgroundColor: color.hexColor }} 
-                                        />
-                                      </button>
-                                    );
-                                  })}
-                                </div>
+                              {/* Colors & Sizes Information Badge */}
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                                <span className="font-semibold text-slate-600">
+                                  <strong className="text-amber-700 font-bold">{product.colores.length}</strong> {product.colores.length === 1 ? 'color disponible' : 'colores disponibles'}
+                                </span>
+                                <span className="font-semibold text-slate-600">
+                                  Tallas: <strong className="text-slate-800 font-bold">{product.tallasDisponibles.join(', ')}</strong>
+                                </span>
                               </div>
 
-                              {/* Sizes available indicator */}
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                                <span className="font-bold text-slate-700">Tallas:</span>
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  {product.tallasDisponibles.map(t => (
-                                    <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-extrabold text-slate-700">
-                                      {t}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Card Action Buttons */}
-                              <div className="grid grid-cols-2 gap-2 pt-2">
+                              {/* Card Action Buttons: Open Modal to Configure Color & Size */}
+                              <div className="grid grid-cols-2 gap-2 pt-1">
                                 <button
-                                  onClick={() => addToCart(product, activeColor, product.tallasDisponibles[0])}
-                                  className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs border border-amber-300 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                  onClick={() => handleOpenDetailModal(product, activeColor)}
+                                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
-                                  <ShoppingBag className="w-3.5 h-3.5 text-amber-600" />
+                                  <ShoppingBag className="w-3.5 h-3.5" />
                                   <span>Añadir</span>
                                 </button>
 
                                 <button
-                                  onClick={() => handleDirectWhatsAppOrder(product, activeColor, product.tallasDisponibles[0])}
-                                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                                  onClick={() => handleOpenDetailModal(product, activeColor)}
+                                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                                 >
                                   <Smartphone className="w-3.5 h-3.5" />
                                   <span>Pedir WhatsApp</span>
