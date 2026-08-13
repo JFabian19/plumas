@@ -13,7 +13,7 @@ export interface JeansProduct {
   modelo: string;
   nombreCompleto: string;
   corte: string;
-  precio: number;
+  precio?: number; // Permite números simples (ej: 100, 100.99, 200) sin símbolo de soles
   precioOriginal?: number;
   descripcion: string;
   detalles: string[];
@@ -81,6 +81,7 @@ export const CATEGORIAS_JEANS: CategoriaJeans[] = [
   }
 ];
 
+// TODOS LOS PRODUCTOS TIENEN PRECIOS VACÍOS (UNDEFINED) POR DEFECTO PARA QUE SE INGRESEN DESDE EL GOOGLE SHEETS COMO NÚMEROS SIMPLES
 export const JEANS_PRODUCTS: JeansProduct[] = [
   // -------------------------------------------------------------
   // 1. PANTALONES JEANS
@@ -92,14 +93,12 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Clásico Jeans",
     nombreCompleto: "Pantalón Clásico Jeans - Lois Originals",
     corte: "Corte Clásico",
-    precio: 169.90,
-    precioOriginal: 199.90,
     descripcion: "Jean clásico Lois de bota recta tradicional. Confeccionado en denim puro heavy-duty de alta densidad con el icónico bordado en bolsillo posterior.",
     detalles: [
       "Tejido Denim de alta durabilidad y resistencia",
       "Corte recto tradicional de tiro medio",
       "Insignia mítica Lois Originals",
-      "Costura reforzada de doble punto"
+      "Costura reinforced de doble punto"
     ],
     destacado: true,
     stockLimitado: true,
@@ -118,8 +117,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Semi Pitillo Jeans",
     nombreCompleto: "Pantalón Semi Pitillo Jeans - Element Comfort",
     corte: "Semi Pitillo",
-    precio: 169.00,
-    precioOriginal: 189.90,
     descripcion: "Jean Element Semi Pitillo con caída entallada sobria. Equilibrio perfecto entre entalle moderno y total comodidad para calzado casual o deportivo.",
     detalles: [
       "Corte Semi Pitillo estilizado",
@@ -145,8 +142,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Pitillo Jeans",
     nombreCompleto: "Pantalón Pitillo Jeans - Bronco Slim Fit",
     corte: "Slim Fit",
-    precio: 169.90,
-    precioOriginal: 199.90,
     descripcion: "Jean pitillo ceñido al cuerpo de la marca Bronco. Confeccionado con tejido elástico adaptativo que moldea la pierna sin quitar libertad de movimiento.",
     detalles: [
       "Corte Slim Pitillo de tiro bajo/medio",
@@ -170,8 +165,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Clásico en Strech",
     nombreCompleto: "Pantalón Clásico en Strech - Pionier Comfort",
     corte: "Corte Clásico",
-    precio: 189.00,
-    precioOriginal: 219.00,
     descripcion: "Pantalón clásico de tiro anatómico confeccionado en tela strech ultra suave. El clásico peruano por excelencia con flex flexible para jornadas largas.",
     detalles: [
       "Tecnología Stretch Comfort Pionier",
@@ -200,8 +193,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Clásico Dril",
     nombreCompleto: "Pantalón Clásico en Algodón Dril",
     corte: "Corte Clásico Dril",
-    precio: 159.00,
-    precioOriginal: 179.90,
     descripcion: "Pantalón de dril 100% algodón con textura elegante. Ideal para vestimenta casual ejecutiva o combinación con camisas y polos manga corta.",
     detalles: [
       "Tejido dril de tacto suave y fresco",
@@ -224,8 +215,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón SEMI Pitillo Dril",
     nombreCompleto: "Pantalón SEMI Pitillo Dril Urban Comfort",
     corte: "Semi Pitillo Dril",
-    precio: 159.90,
-    precioOriginal: 179.90,
     descripcion: "Pantalón en dril stretch de silueta semi pitillo. Estiliza las piernas manteniendo soltura y máxima frescura durante todo el día.",
     detalles: [
       "Dril Strech de flex moderada",
@@ -247,13 +236,11 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Cargo Dril",
     nombreCompleto: "Pantalón Cargo Dril Tactico & Urbano",
     corte: "Cargo Dril",
-    precio: 169.00,
-    precioOriginal: 199.00,
     descripcion: "Pantalón cargo en dril reforzado con múltiples bolsillos laterales utilitarios. Combinación impecable de robustez, espacio y actitud urbana.",
     detalles: [
       "Bolsillos laterales tipo fuelle con broches",
       "Algodón dril heavy weight de alta resistencia",
-      "Cintura reforzada de calce ergonómico",
+      "Cintura reinforced de calce ergonómico",
       "Acabado mate industrial"
     ],
     destacado: true,
@@ -275,8 +262,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Pantalón Cargo Jeans",
     nombreCompleto: "Pantalón Cargo Jeans Loose Fit",
     corte: "Cargo Relajado",
-    precio: 169.00,
-    precioOriginal: 189.00,
     descripcion: "Cargo en denim puro con bolsillos tipo compartimento en los muslos. Estilo oversized holgado perfecto para la cultura urbana actual.",
     detalles: [
       "Corte holgado / loose fit",
@@ -299,8 +284,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Bagui Jeans",
     nombreCompleto: "Bagui Jeans - Baggy Streetwear Original",
     corte: "Baggy Fit",
-    precio: 159.00,
-    precioOriginal: 179.00,
     descripcion: "Jean Baggy holgado en caderas y muslos con caída ancha hasta los tobillos. La tendencia noventera reinventada con denim peruano de primer nivel.",
     detalles: [
       "Silueta Baggy / Bagui holgada",
@@ -322,8 +305,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Moon Jeans",
     nombreCompleto: "Moon Jeans - MOM / Moon Fit Urban",
     corte: "Moon Fit / MOM",
-    precio: 159.00,
-    precioOriginal: 179.00,
     descripcion: "Jean Moon Fit con tiro alto y silueta ligeramente curva en muslos que se estrecha en los tobillos. Aporta soltura, volumen y un toque retro audaz.",
     detalles: [
       "Corte Moon / MOM vintage de tiro alto",
@@ -348,8 +329,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Short Jeans",
     nombreCompleto: "Short Jeans - Lois Summer Edition",
     corte: "Short Denim",
-    precio: 99.00,
-    precioOriginal: 119.90,
     descripcion: "Bermuda / Short en denim stretch con acabado deshilachado o doblado. Ideal para días soleados y outfit casual relajado.",
     detalles: [
       "Denim stretch liviano de gran movilidad",
@@ -371,8 +350,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Short Dril",
     nombreCompleto: "Short Dril Chino Confort",
     corte: "Short Dril Chino",
-    precio: 89.90,
-    precioOriginal: 109.90,
     descripcion: "Short estilo chino confeccionado en algodón dril peinado. Fresco, elegante y extremadamente suave al contacto con la piel.",
     detalles: [
       "Algodón dril suave de secado rápido",
@@ -393,8 +370,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Short Cargo",
     nombreCompleto: "Short Cargo Utilitario Dril & Denim",
     corte: "Short Cargo",
-    precio: 99.90,
-    precioOriginal: 119.00,
     descripcion: "Bermuda cargo con múltiples bolsillos tácticos. Diseñada para actividades al aire libre o un estilo urbano desenfadado.",
     detalles: [
       "Bolsillos de fuelle laterales con tapa",
@@ -416,8 +391,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Short Suelto",
     nombreCompleto: "Short Suelto Relaxed Fit",
     corte: "Short Holgado",
-    precio: 95.00,
-    precioOriginal: 115.00,
     descripcion: "Short de pierna ancha y holgada para total ventilación y libertad de movimiento. La prenda indispensable del verano urbano.",
     detalles: [
       "Corte ancho en pierna",
@@ -438,8 +411,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Short Clásico Jeans",
     nombreCompleto: "Short Clásico Jeans - Pionier Heritage",
     corte: "Short Clásico",
-    precio: 99.00,
-    precioOriginal: 119.00,
     descripcion: "Short de jean tradicional Pionier con bota recta clásica y durabilidad legendaria en denim puro.",
     detalles: [
       "Denim 100% Algodón Pionier",
@@ -464,8 +435,6 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Casaca Jeans",
     nombreCompleto: "Casaca Jeans - Lois Trucker Original",
     corte: "Casaca Denim",
-    precio: 199.00,
-    precioOriginal: 239.00,
     descripcion: "Casaca de jean modelo Trucker icónico de Lois. Elaborada en denim rígido de alto gramaje con solapas pectorales y ajustadores laterales.",
     detalles: [
       "Estructura Trucker icónica vintage",
@@ -488,14 +457,12 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     modelo: "Casaca con Peluche Jeans",
     nombreCompleto: "Casaca Jeans con Peluche Sherpa",
     corte: "Casaca Sherpa Warm",
-    precio: 229.00,
-    precioOriginal: 269.00,
     descripcion: "Casaca de jean acolchada con cuello e interior en peluche / sherpa blanco térmico. El abrigo imprescindible con máximo impacto visual y calidez.",
     detalles: [
       "Forro interior y cuello de sherpa/peluche ultra suave",
       "Cuerpo de denim resistente anti-viento",
       "Bolsillos térmicos reposamanos",
-      "Broches de presión reforzados"
+      "Broches de presión reinforced"
     ],
     destacado: true,
     nuevo: true,

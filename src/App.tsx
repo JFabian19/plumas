@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ShoppingBag, Plus, Minus, X, Trash2, Search, Sparkles, Filter, 
   Ruler, Truck, ShieldCheck, MapPin, CheckCircle, Smartphone, 
@@ -11,6 +11,7 @@ import {
   SHOWCASE_MODEL_IMAGE, MARQUEE_ANNOUNCEMENT, STORE_INFO,
   CATEGORIAS_JEANS, CategoriaJeans, CategoriaId
 } from './data/jeansData';
+import { fetchPricesFromSheet } from './utils/sheetPriceFetcher';
 
 interface CartItem {
   id: string; // product id + color + size
@@ -21,6 +22,30 @@ interface CartItem {
 }
 
 export default function App() {
+  // Google Sheets live prices (fetched on mount)
+  const [sheetPrices, setSheetPrices] = useState<Map<string, number>>(new Map());
+
+  // Fetch prices from Google Sheets on page load
+  useEffect(() => {
+    fetchPricesFromSheet().then(priceMap => {
+      if (priceMap.size > 0) {
+        setSheetPrices(priceMap);
+      }
+    });
+  }, []);
+
+  // Merge sheet prices into products: if a price exists in the Sheet, use it
+  const products = useMemo(() => {
+    if (sheetPrices.size === 0) return JEANS_PRODUCTS;
+    return JEANS_PRODUCTS.map(product => {
+      const sheetPrice = sheetPrices.get(product.id);
+      if (sheetPrice !== undefined) {
+        return { ...product, precio: sheetPrice };
+      }
+      return product;
+    });
+  }, [sheetPrices]);
+
   // Category filter state ('Todas' or specific CategoriaId)
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
 
@@ -71,6 +96,14 @@ export default function App() {
     }, 3000);
   };
 
+  // Helper to format numeric prices (e.g. 200 -> S/ 200.00)
+  const formatPrice = (price?: number): string | null => {
+    if (price === undefined || price === null || isNaN(price) || price <= 0) {
+      return null;
+    }
+    return `S/ ${price.toFixed(2)}`;
+  };
+
   // Helper to get active color for a product card
   const getActiveColor = (product: JeansProduct): ColorVariant => {
     return activeCardColors[product.id] || product.colores[0];
@@ -95,7 +128,7 @@ export default function App() {
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
-    return JEANS_PRODUCTS.filter(product => {
+    return products.filter(product => {
       // Category filter
       if (selectedCategory !== 'Todas' && product.categoriaId !== selectedCategory) {
         return false;
@@ -126,7 +159,7 @@ export default function App() {
       }
       return true;
     });
-  }, [selectedCategory, selectedBrand, selectedFit, selectedColorFilter, searchQuery]);
+  }, [products, selectedCategory, selectedBrand, selectedFit, selectedColorFilter, searchQuery]);
 
   // Cart operations
   const addToCart = (product: JeansProduct, color: ColorVariant, talla: number | string, cantidad: number = 1) => {
@@ -167,15 +200,16 @@ export default function App() {
   };
 
   const cartTotalCount = useMemo(() => cart.reduce((acc, i) => acc + i.cantidad, 0), [cart]);
-  const cartTotalPrice = useMemo(() => cart.reduce((acc, i) => acc + (i.product.precio * i.cantidad), 0), [cart]);
+  const cartTotalPrice = useMemo(() => cart.reduce((acc, i) => acc + ((i.product.precio || 0) * i.cantidad), 0), [cart]);
 
   // WhatsApp Single Item Order
   const handleDirectWhatsAppOrder = (product: JeansProduct, color: ColorVariant, talla: number | string) => {
+    const precioTexto = formatPrice(product.precio) || 'A consultar';
     const message = `${STORE_INFO.mensajeWhatsAppBase}
 👖 *${product.nombreCompleto}*
 🎨 Color: *${color.nombre}*
 📐 Talla: *${talla}*
-💰 Precio: *S/ ${product.precio.toFixed(2)}*
+💰 Precio: *${precioTexto}*
 
 ¿Tienen stock disponible para envío inmediato por agencia?`;
 
@@ -189,7 +223,11 @@ export default function App() {
 
     let itemsList = '';
     cart.forEach((item, index) => {
-      itemsList += `${index + 1}. *${item.product.nombreCompleto}*\n   • Color: ${item.color.nombre}\n   • Talla: ${item.talla}\n   • Cantidad: ${item.cantidad}\n   • Subtotal: S/ ${(item.product.precio * item.cantidad).toFixed(2)}\n\n`;
+      const subtotalTexto = item.product.precio && item.product.precio > 0 
+        ? `S/ ${(item.product.precio * item.cantidad).toFixed(2)}` 
+        : 'A consultar';
+
+      itemsList += `${index + 1}. *${item.product.nombreCompleto}*\n   • Color: ${item.color.nombre}\n   • Talla: ${item.talla}\n   • Cantidad: ${item.cantidad}\n   • Subtotal: ${subtotalTexto}\n\n`;
     });
 
     let agenciaTexto = customerData.metodoEntrega;
@@ -209,7 +247,9 @@ export default function App() {
         (customerData.medioPago ? `• Medio de Pago: ${customerData.medioPago}\n` : '');
     }
 
-    const fullMessage = `🪶 *NUEVO PEDIDO - PLUMAS JEANS* 🪶\n\n*PRODUCTOS:* \n${itemsList}💵 *TOTAL DEL PEDIDO: S/ ${cartTotalPrice.toFixed(2)}*${customerInfo}\n¿Tienen stock disponible para confirmar mi pedido?`;
+    const totalTexto = cartTotalPrice > 0 ? `S/ ${cartTotalPrice.toFixed(2)}` : 'A consultar por WhatsApp';
+
+    const fullMessage = `🪶 *NUEVO PEDIDO - PLUMAS JEANS* 🪶\n\n*PRODUCTOS:* \n${itemsList}💵 *TOTAL DEL PEDIDO: ${totalTexto}*${customerInfo}\n¿Tienen stock disponible para confirmar mi pedido?`;
 
     const encodedMsg = encodeURIComponent(fullMessage);
     window.open(`https://wa.me/${STORE_INFO.telefonoWhatsApp}?text=${encodedMsg}`, '_blank');
@@ -441,7 +481,7 @@ export default function App() {
                   <Layers className="w-4 h-4" />
                 </span>
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
-                  {JEANS_PRODUCTS.length} Ítems
+                  {products.length} Ítems
                 </span>
               </div>
               <div>
@@ -454,7 +494,7 @@ export default function App() {
 
             {/* 5 Main Category Cards */}
             {CATEGORIAS_JEANS.map(cat => {
-              const count = JEANS_PRODUCTS.filter(p => p.categoriaId === cat.id).length;
+              const count = products.filter(p => p.categoriaId === cat.id).length;
               const isSelected = selectedCategory === cat.id;
 
               return (
@@ -668,6 +708,8 @@ export default function App() {
                         const displayedImg = (viewMode === 'poster' && product.imagenPoster) 
                           ? product.imagenPoster 
                           : activeColor.imagen;
+                        
+                        const precioFormateado = formatPrice(product.precio);
 
                         return (
                           <motion.div
@@ -734,12 +776,20 @@ export default function App() {
                                     {product.corte}
                                   </span>
                                   <div className="text-right">
-                                    <span className="text-lg font-black text-amber-600 font-title">
-                                      S/ {product.precio.toFixed(2)}
-                                    </span>
-                                    {product.precioOriginal && (
-                                      <span className="block text-[11px] text-slate-400 line-through -mt-1">
-                                        S/ {product.precioOriginal.toFixed(2)}
+                                    {precioFormateado ? (
+                                      <>
+                                        <span className="text-lg font-black text-amber-600 font-title">
+                                          {precioFormateado}
+                                        </span>
+                                        {product.precioOriginal && product.precioOriginal > 0 && (
+                                          <span className="block text-[11px] text-slate-400 line-through -mt-1">
+                                            {formatPrice(product.precioOriginal)}
+                                          </span>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <span className="text-[11px] font-extrabold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                                        Consultar
                                       </span>
                                     )}
                                   </div>
@@ -859,7 +909,7 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2 bg-slate-900 text-amber-400 px-3 py-1 rounded-xl text-xs sm:text-sm font-black">
-                <span>S/ {cartTotalPrice.toFixed(2)}</span>
+                <span>{cartTotalPrice > 0 ? `S/ ${cartTotalPrice.toFixed(2)}` : 'A consultar'}</span>
                 <ChevronRight className="w-4 h-4 text-amber-400" />
               </div>
             </button>
@@ -908,7 +958,9 @@ export default function App() {
                   <p>Talla: <strong className="text-slate-900">{addedItemModal.item.talla}</strong></p>
                   <p>Cantidad: <strong className="text-slate-900">{addedItemModal.item.cantidad}</strong></p>
                   <p className="text-base font-black text-amber-600 font-title pt-0.5">
-                    S/ {(addedItemModal.product.precio * addedItemModal.item.cantidad).toFixed(2)}
+                    {addedItemModal.product.precio && addedItemModal.product.precio > 0 
+                      ? formatPrice(addedItemModal.product.precio * addedItemModal.item.cantidad)
+                      : 'Precio a consultar'}
                   </p>
                 </div>
               </div>
@@ -982,12 +1034,20 @@ export default function App() {
                         {detailProduct.nombreCompleto}
                       </h3>
                       <div className="flex items-center gap-3 mt-2">
-                        <span className="text-2xl font-black text-amber-600 font-title">
-                          S/ {detailProduct.precio.toFixed(2)}
-                        </span>
-                        {detailProduct.precioOriginal && (
-                          <span className="text-xs text-slate-400 line-through font-semibold">
-                            S/ {detailProduct.precioOriginal.toFixed(2)}
+                        {detailProduct.precio && detailProduct.precio > 0 ? (
+                          <>
+                            <span className="text-2xl font-black text-amber-600 font-title">
+                              {formatPrice(detailProduct.precio)}
+                            </span>
+                            {detailProduct.precioOriginal && detailProduct.precioOriginal > 0 && (
+                              <span className="text-xs text-slate-400 line-through font-semibold">
+                                {formatPrice(detailProduct.precioOriginal)}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs font-extrabold px-3 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
+                            Precio a consultar por WhatsApp
                           </span>
                         )}
                       </div>
@@ -1200,7 +1260,9 @@ export default function App() {
                           <span>Talla: <strong className="text-slate-900">{item.talla}</strong></span>
                         </div>
                         <span className="text-sm font-black text-amber-600 block font-title">
-                          S/ {(item.product.precio * item.cantidad).toFixed(2)}
+                          {item.product.precio && item.product.precio > 0 
+                            ? formatPrice(item.product.precio * item.cantidad)
+                            : 'A consultar'}
                         </span>
                       </div>
 
@@ -1404,7 +1466,7 @@ export default function App() {
                   <div className="flex items-center justify-between text-base">
                     <span className="font-bold text-slate-700">TOTAL PEDIDO:</span>
                     <span className="text-2xl font-black text-amber-600 font-title">
-                      S/ {cartTotalPrice.toFixed(2)}
+                      {cartTotalPrice > 0 ? `S/ ${cartTotalPrice.toFixed(2)}` : 'A consultar'}
                     </span>
                   </div>
 
