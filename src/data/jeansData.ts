@@ -4,12 +4,15 @@ export interface ColorVariant {
   hexColor: string;
 }
 
+export type CategoriaId = 'pantalones-jeans' | 'pantalones-dril' | 'pantalones-sueltos' | 'short' | 'casacas';
+
 export interface JeansProduct {
   id: string;
-  marca: 'Lois' | 'Element' | 'Pionier' | 'Bronco';
+  categoriaId: CategoriaId;
+  marca: 'Lois' | 'Element' | 'Pionier' | 'Bronco' | 'Plumas';
   modelo: string;
   nombreCompleto: string;
-  corte: 'Slim Fit' | 'Semi Pitillo' | 'MOM Jeans' | 'Corte Clásico';
+  corte: string;
   precio: number;
   precioOriginal?: number;
   descripcion: string;
@@ -17,80 +20,112 @@ export interface JeansProduct {
   destacado?: boolean;
   nuevo?: boolean;
   stockLimitado?: boolean;
-  tallasDisponibles: number[];
+  tallasDisponibles: (number | string)[];
   imagenPoster?: string;
   colores: ColorVariant[];
 }
 
+export interface CategoriaJeans {
+  id: CategoriaId;
+  nombre: string;
+  subtitulo: string;
+  descripcion: string;
+  imagenHeader: string;
+  badge: string;
+}
+
 export const LOGO_IMAGE = "/WhatsApp Image 2026-08-10 at 17.29.49 (3).jpeg";
 export const SHOWCASE_MODEL_IMAGE = "/WhatsApp Image 2026-08-10 at 17.29.53.jpeg";
+export const MARQUEE_ANNOUNCEMENT = "🪶 PLUMAS JEANS • TIENDA OFICIAL DE JEANS & MODA PREMIUM • LOIS, ELEMENT, PIONIER, BRONCO • ENVÍOS RÁPIDOS A TODO EL PERÚ • TALLAS 28 A 36 ⚡ STOCK LIMITADO 🪶";
 
-export const MARQUEE_ANNOUNCEMENT = "🪶 PLUMAS JEANS • TIENDA OFICIAL DE JEANS PREMIUM • LOIS, ELEMENT, PIONIER, BRONCO • ENVÍOS RÁPIDOS A TODO EL PERÚ • TALLAS 28 A 36 ⚡ STOCK LIMITADO 🪶";
+export const CATEGORIAS_JEANS: CategoriaJeans[] = [
+  {
+    id: 'pantalones-jeans',
+    nombre: 'Pantalones Jeans',
+    subtitulo: 'Cortes Clásicos, Pitillos, Semi Pitillos y Strech',
+    descripcion: 'Confeccionados en denim de alta calidad con tecnología stretch y acabados de lavado exclusivo.',
+    imagenHeader: '/cat_pantalones_jeans.png',
+    badge: 'Colección Clásica'
+  },
+  {
+    id: 'pantalones-dril',
+    nombre: 'Pantalones Dril',
+    subtitulo: 'Estilo Ejecutivo & Urbano en Algodón Dril',
+    descripcion: 'Pantalones de corte impecable y tejido dril confortable, ideales para el día a día y ocasiones vestir.',
+    imagenHeader: '/cat_pantalones_dril.png',
+    badge: 'Confort Versátil'
+  },
+  {
+    id: 'pantalones-sueltos',
+    nombre: 'Pantalones Sueltos',
+    subtitulo: 'Cargo Jeans, Bagui Fit & Moon Jeans',
+    descripcion: 'Siluetas holgadas y tendencia streetwear para el máximo confort y soltura.',
+    imagenHeader: '/cat_pantalones_sueltos.png',
+    badge: 'Tendencia Urbana'
+  },
+  {
+    id: 'short',
+    nombre: 'Shorts',
+    subtitulo: 'Shorts Jeans, Dril, Cargo y Sueltos',
+    descripcion: 'Frescura, soltura y durabilidad para días calurosos o estilo urbano veraniego.',
+    imagenHeader: '/cat_short.png',
+    badge: 'Frescura & Moda'
+  },
+  {
+    id: 'casacas',
+    nombre: 'Casacas',
+    subtitulo: 'Casacas Jeans Clásicas & con Peluche Sherpa',
+    descripcion: 'Abrigo con actitud denim, diseñadas para durar y destacar en cualquier look.',
+    imagenHeader: '/cat_casacas.png',
+    badge: 'Outerwear Premium'
+  }
+];
 
 export const JEANS_PRODUCTS: JeansProduct[] = [
+  // -------------------------------------------------------------
+  // 1. PANTALONES JEANS
+  // -------------------------------------------------------------
   {
-    id: "lois-sevilla-slim",
+    id: "pantalon-clasico-jeans",
+    categoriaId: "pantalones-jeans",
     marca: "Lois",
-    modelo: "Sevilla Slim",
-    nombreCompleto: "Lois Originals - Sevilla Slim",
-    corte: "Slim Fit",
+    modelo: "Pantalón Clásico Jeans",
+    nombreCompleto: "Pantalón Clásico Jeans - Lois Originals",
+    corte: "Corte Clásico",
     precio: 169.90,
     precioOriginal: 199.90,
-    descripcion: "Jean Lois Originals modelo Sevilla Slim. Confeccionado en denim stretch premium de alta densidad, tiro medio y pierna ceñida elegante con el icónico toro Lois bordado en bolsillo posterior.",
+    descripcion: "Jean clásico Lois de bota recta tradicional. Confeccionado en denim puro heavy-duty de alta densidad con el icónico bordado en bolsillo posterior.",
     detalles: [
-      "Tela Denim Stretch de alta elasticidad y retorno",
-      "Corte Sevilla Slim ceñido al cuerpo sin apretar",
-      "Insignia clásica Lois Originals y parche retro",
-      "Remaches de aleación antioxidante",
-      "Construcción de costura reforzada de doble punto"
+      "Tejido Denim de alta durabilidad y resistencia",
+      "Corte recto tradicional de tiro medio",
+      "Insignia mítica Lois Originals",
+      "Costura reforzada de doble punto"
     ],
     destacado: true,
     stockLimitado: true,
     tallasDisponibles: [28, 30, 32, 34, 36],
     imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.44 (3).jpeg",
     colores: [
-      {
-        nombre: "Celeste",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.42.jpeg",
-        hexColor: "#60a5fa"
-      },
-      {
-        nombre: "Negro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.43.jpeg",
-        hexColor: "#1e293b"
-      },
-      {
-        nombre: "Verdoso",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.44.jpeg",
-        hexColor: "#334155"
-      },
-      {
-        nombre: "Plomo Claro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.44 (1).jpeg",
-        hexColor: "#94a3b8"
-      },
-      {
-        nombre: "Plomo Oscuro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.44 (2).jpeg",
-        hexColor: "#475569"
-      }
+      { nombre: "Azul Clásico", imagen: "/WhatsApp Image 2026-08-10 at 17.29.42.jpeg", hexColor: "#60a5fa" },
+      { nombre: "Negro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.43.jpeg", hexColor: "#1e293b" },
+      { nombre: "Plomo Oscuro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.44 (2).jpeg", hexColor: "#475569" }
     ]
   },
   {
-    id: "element-semi-pitillo",
+    id: "pantalon-semi-pitillo-jeans",
+    categoriaId: "pantalones-jeans",
     marca: "Element",
-    modelo: "Semi Pitillo Black Edition",
-    nombreCompleto: "Element Jeans - Semi Pitillo (Black Edition)",
+    modelo: "Pantalón Semi Pitillo Jeans",
+    nombreCompleto: "Pantalón Semi Pitillo Jeans - Element Comfort",
     corte: "Semi Pitillo",
     precio: 169.00,
     precioOriginal: 189.90,
-    descripcion: "Jean Element Black Edition de la línea Comfort Premium. Incluye cinturón/correa textil distintiva. Diseñado para un estilo urbano moderno con caída impecable y acabado ultra suave.",
+    descripcion: "Jean Element Semi Pitillo con caída entallada sobria. Equilibrio perfecto entre entalle moderno y total comodidad para calzado casual o deportivo.",
     detalles: [
-      "Incluye correa textil de regalo/estilo integrada",
+      "Corte Semi Pitillo estilizado",
       "Línea Element Black Edition Comfort Premium",
-      "Corte Semi Pitillo ideal para zapato casual o zapatillas",
-      "Lavado ecológico de alta durabilidad",
-      "Etiqueta de cuero genuino en cintura"
+      "Lavado de alta resistencia al uso diario",
+      "Cinturón textil de obsequio incluido"
     ],
     destacado: true,
     nuevo: true,
@@ -98,240 +133,384 @@ export const JEANS_PRODUCTS: JeansProduct[] = [
     tallasDisponibles: [28, 30, 32, 34, 36],
     imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.45.jpeg",
     colores: [
-      {
-        nombre: "Azul Cristal",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (1).jpeg",
-        hexColor: "#2563eb"
-      },
-      {
-        nombre: "Negro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (2).jpeg",
-        hexColor: "#0f172a"
-      },
-      {
-        nombre: "Grafito",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.46.jpeg",
-        hexColor: "#1e1b4b"
-      },
-      {
-        nombre: "Plomo Claro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (1).jpeg",
-        hexColor: "#cbd5e1"
-      },
-      {
-        nombre: "Plomo",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (2).jpeg",
-        hexColor: "#64748b"
-      },
-      {
-        nombre: "Plomo Oscuro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (3).jpeg",
-        hexColor: "#334155"
-      },
-      {
-        nombre: "Hielo",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (4).jpeg",
-        hexColor: "#93c5fd"
-      },
-      {
-        nombre: "Maíz",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.52.jpeg",
-        hexColor: "#7dd3fc"
-      }
+      { nombre: "Azul Cristal", imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (1).jpeg", hexColor: "#2563eb" },
+      { nombre: "Negro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (2).jpeg", hexColor: "#0f172a" },
+      { nombre: "Plomo Claro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (1).jpeg", hexColor: "#cbd5e1" }
     ]
   },
   {
-    id: "element-mom-jeans",
-    marca: "Element",
-    modelo: "MOM Jeans",
-    nombreCompleto: "Element Jeans - MOM Fit Urban Wash",
-    corte: "MOM Jeans",
-    precio: 159.00,
-    precioOriginal: 179.00,
-    descripcion: "Tendencia vintage irresistible. MOM Jeans Element con tiro alto, estructura relajada en caderas y silueta cónica estilizada. Elaborado en algodón denim con lavado acid wash texturizado.",
+    id: "pantalon-pitillo-jeans",
+    categoriaId: "pantalones-jeans",
+    marca: "Bronco",
+    modelo: "Pantalón Pitillo Jeans",
+    nombreCompleto: "Pantalón Pitillo Jeans - Bronco Slim Fit",
+    corte: "Slim Fit",
+    precio: 169.90,
+    precioOriginal: 199.90,
+    descripcion: "Jean pitillo ceñido al cuerpo de la marca Bronco. Confeccionado con tejido elástico adaptativo que moldea la pierna sin quitar libertad de movimiento.",
     detalles: [
-      "Corte MOM Fit de tiro alto vintage",
-      "Tejido denim 100% algodón de alta resistencia",
-      "Textura suave al tacto con desgastado artístico",
-      "Bolsillos profundos y tiro anatómico cómodo",
-      "Excelente entalle en la parte posterior"
+      "Corte Slim Pitillo de tiro bajo/medio",
+      "Elasticidad de alto retorno",
+      "Remaches metálicos Bronco USA 1971",
+      "Cierre metálico ultra duradero"
     ],
     destacado: false,
     nuevo: true,
     stockLimitado: true,
     tallasDisponibles: [28, 30, 32, 34],
     colores: [
-      {
-        nombre: "Plomo Claro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.50.jpeg",
-        hexColor: "#94a3b8"
-      },
-      {
-        nombre: "Maíz",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (1).jpeg",
-        hexColor: "#bfdbfe"
-      },
-      {
-        nombre: "Madera",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (2).jpeg",
-        hexColor: "#3b82f6"
-      },
-      {
-        nombre: "Plomo Oscuro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (3).jpeg",
-        hexColor: "#475569"
-      },
-      {
-        nombre: "Plomo Intermedio",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (4).jpeg",
-        hexColor: "#64748b"
-      }
+      { nombre: "Negro Stone", imagen: "/WhatsApp Image 2026-08-10 at 17.29.51.jpeg", hexColor: "#1e293b" },
+      { nombre: "Azul Pacific", imagen: "/WhatsApp Image 2026-08-10 at 17.29.51 (1).jpeg", hexColor: "#1d4ed8" }
     ]
   },
   {
-    id: "pionier-semi-pitillo",
+    id: "pantalon-clasico-strech",
+    categoriaId: "pantalones-jeans",
     marca: "Pionier",
-    modelo: "Semi-Pitillo Comfort",
-    nombreCompleto: "Pionier Jeans - Semi-Pitillo Comfort",
-    corte: "Semi Pitillo",
+    modelo: "Pantalón Clásico en Strech",
+    nombreCompleto: "Pantalón Clásico en Strech - Pionier Comfort",
+    corte: "Corte Clásico",
     precio: 189.00,
     precioOriginal: 219.00,
-    descripcion: "Icono nacional del denim peruano desde 1979. Pionier Semi-Pitillo Comfort con tecnología de ajuste anatómico 'Double Controlled Quality'. Garantiza máxima frescura, resistencia al lavado y libertad de movimiento.",
+    descripcion: "Pantalón clásico de tiro anatómico confeccionado en tela strech ultra suave. El clásico peruano por excelencia con flex flexible para jornadas largas.",
     detalles: [
-      "Tecnología Comfort Jeans: conserva su forma original",
-      "Tiro Medio / Bota Semi Recta ergonométrica",
-      "Fabricación de calidad controlada desde 1979",
-      "Costuras reforzadas en contraste dorado",
-      "Etiqueta de cuero Pionier de lujo"
+      "Tecnología Stretch Comfort Pionier",
+      "Bota recta ergonométrica tradicional",
+      "Garantía de calidad controlada nacional",
+      "Costuras de refuerzo en contraste"
+    ],
+    destacado: true,
+    stockLimitado: true,
+    tallasDisponibles: [28, 30, 32, 34, 36, 38],
+    imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.46 (5).jpeg",
+    colores: [
+      { nombre: "Azul Cristal", imagen: "/WhatsApp Image 2026-08-10 at 17.29.47.jpeg", hexColor: "#1d4ed8" },
+      { nombre: "Grafito", imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (1).jpeg", hexColor: "#1e3a8a" },
+      { nombre: "Celeste", imagen: "/WhatsApp Image 2026-08-10 at 17.29.48.jpeg", hexColor: "#93c5fd" }
+    ]
+  },
+
+  // -------------------------------------------------------------
+  // 2. PANTALONES DRIL
+  // -------------------------------------------------------------
+  {
+    id: "pantalon-clasico-dril",
+    categoriaId: "pantalones-dril",
+    marca: "Pionier",
+    modelo: "Pantalón Clásico Dril",
+    nombreCompleto: "Pantalón Clásico en Algodón Dril",
+    corte: "Corte Clásico Dril",
+    precio: 159.00,
+    precioOriginal: 179.90,
+    descripcion: "Pantalón de dril 100% algodón con textura elegante. Ideal para vestimenta casual ejecutiva o combinación con camisas y polos manga corta.",
+    detalles: [
+      "Tejido dril de tacto suave y fresco",
+      "Corte clásico confort de caída limpia",
+      "Bolsillos profundos tipo chino",
+      "Resistencia a lavados continuos"
+    ],
+    destacado: true,
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Beige Khaki", imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (2).jpeg", hexColor: "#d4a373" },
+      { nombre: "Plomo Ejecutivo", imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (3).jpeg", hexColor: "#64748b" },
+      { nombre: "Negro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.49 (1).jpeg", hexColor: "#0f172a" }
+    ]
+  },
+  {
+    id: "pantalon-semi-pitillo-dril",
+    categoriaId: "pantalones-dril",
+    marca: "Element",
+    modelo: "Pantalón SEMI Pitillo Dril",
+    nombreCompleto: "Pantalón SEMI Pitillo Dril Urban Comfort",
+    corte: "Semi Pitillo Dril",
+    precio: 159.90,
+    precioOriginal: 179.90,
+    descripcion: "Pantalón en dril stretch de silueta semi pitillo. Estiliza las piernas manteniendo soltura y máxima frescura durante todo el día.",
+    detalles: [
+      "Dril Strech de flex moderada",
+      "Diseño semi ajustado moderno",
+      "Bolsillos con costura invisible",
+      "Ideal para calzado vestir o zapatillas"
+    ],
+    nuevo: true,
+    tallasDisponibles: [28, 30, 32, 34],
+    colores: [
+      { nombre: "Plomo Claro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (1).jpeg", hexColor: "#cbd5e1" },
+      { nombre: "Verdoso Olive", imagen: "/WhatsApp Image 2026-08-10 at 17.29.44.jpeg", hexColor: "#334155" }
+    ]
+  },
+  {
+    id: "pantalon-cargo-dril",
+    categoriaId: "pantalones-dril",
+    marca: "Bronco",
+    modelo: "Pantalón Cargo Dril",
+    nombreCompleto: "Pantalón Cargo Dril Tactico & Urbano",
+    corte: "Cargo Dril",
+    precio: 169.00,
+    precioOriginal: 199.00,
+    descripcion: "Pantalón cargo en dril reforzado con múltiples bolsillos laterales utilitarios. Combinación impecable de robustez, espacio y actitud urbana.",
+    detalles: [
+      "Bolsillos laterales tipo fuelle con broches",
+      "Algodón dril heavy weight de alta resistencia",
+      "Cintura reforzada de calce ergonómico",
+      "Acabado mate industrial"
     ],
     destacado: true,
     stockLimitado: true,
     tallasDisponibles: [28, 30, 32, 34, 36],
-    imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.46 (5).jpeg",
     colores: [
-      {
-        nombre: "Azul Cristal",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.47.jpeg",
-        hexColor: "#1d4ed8"
-      },
-      {
-        nombre: "Grafito",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (1).jpeg",
-        hexColor: "#1e3a8a"
-      },
-      {
-        nombre: "Maíz",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (2).jpeg",
-        hexColor: "#60a5fa"
-      },
-      {
-        nombre: "Verdoso",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (3).jpeg",
-        hexColor: "#2563eb"
-      },
-      {
-        nombre: "Celeste",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.48.jpeg",
-        hexColor: "#93c5fd"
-      }
+      { nombre: "Verde Olivo", imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (3).jpeg", hexColor: "#475569" },
+      { nombre: "Negro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.43.jpeg", hexColor: "#0f172a" }
     ]
   },
+
+  // -------------------------------------------------------------
+  // 3. PANTALONES SUELTOS
+  // -------------------------------------------------------------
   {
-    id: "pionier-corte-clasico",
-    marca: "Pionier",
-    modelo: "Corte Clásico Original",
-    nombreCompleto: "Pionier Jeans - Corte Clásico Original",
-    corte: "Corte Clásico",
-    precio: 179.00,
-    precioOriginal: 199.00,
-    descripcion: "El genuino jean clásico Pionier de bota recta tradicional. Confeccionado en denim puro de durabilidad extrema, pensado para el caballero elegante que busca solidez, confort tradicional y prestancia.",
+    id: "pantalon-cargo-jeans",
+    categoriaId: "pantalones-sueltos",
+    marca: "Element",
+    modelo: "Pantalón Cargo Jeans",
+    nombreCompleto: "Pantalón Cargo Jeans Loose Fit",
+    corte: "Cargo Relajado",
+    precio: 169.00,
+    precioOriginal: 189.00,
+    descripcion: "Cargo en denim puro con bolsillos tipo compartimento en los muslos. Estilo oversized holgado perfecto para la cultura urbana actual.",
     detalles: [
-      "Corte Clásico Original de bota recta tradicional",
-      "Denim 100% algodón heavy-duty de alta resistencia",
-      "Placa/pin Pionier y etiquetas clásicas amarillas",
-      "Costura triple en tiros para resistencia superior",
-      "Diseño atemporal de gran versatilidad"
+      "Corte holgado / loose fit",
+      "Bolsillos de carga amplios",
+      "Denim pre-lavado suave al tacto",
+      "Costura extra reforzada en entrepierna"
     ],
-    destacado: false,
-    stockLimitado: true,
-    tallasDisponibles: [28, 30, 32, 34, 36, 38],
-    imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.48 (1).jpeg",
+    destacado: true,
+    nuevo: true,
+    tallasDisponibles: [28, 30, 32, 34],
     colores: [
-      {
-        nombre: "Plomo",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (2).jpeg",
-        hexColor: "#475569"
-      },
-      {
-        nombre: "Celeste",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (3).jpeg",
-        hexColor: "#60a5fa"
-      },
-      {
-        nombre: "Azul Cristal",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.49.jpeg",
-        hexColor: "#1d4ed8"
-      },
-      {
-        nombre: "Negro",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.49 (1).jpeg",
-        hexColor: "#0f172a"
-      },
-      {
-        nombre: "Acero",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.49 (2).jpeg",
-        hexColor: "#1e3a8a"
-      },
-      {
-        nombre: "Verdoso",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.52 (1).jpeg",
-        hexColor: "#1e293b"
-      },
-      {
-        nombre: "Grafito",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.52 (2).jpeg",
-        hexColor: "#090d16"
-      }
+      { nombre: "Maíz Acid", imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (1).jpeg", hexColor: "#bfdbfe" },
+      { nombre: "Azul Denim", imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (2).jpeg", hexColor: "#3b82f6" }
     ]
   },
   {
-    id: "bronco-tukson-slim",
-    marca: "Bronco",
-    modelo: "Tukson Slim Fit Comfort",
-    nombreCompleto: "Bronco Jeans - Tukson Slim Fit (USA 1971)",
-    corte: "Slim Fit",
-    precio: 169.90,
-    precioOriginal: 199.90,
-    descripcion: "Jean Bronco modelo Tukson Slim Fit Comfort. Inspirado en la mística americana Denver Colorado 1971. Destaca por su estampa fuerte, remaches grabados y tela stretch de flexibilidad absoluta.",
+    id: "bagui-jeans",
+    categoriaId: "pantalones-sueltos",
+    marca: "Element",
+    modelo: "Bagui Jeans",
+    nombreCompleto: "Bagui Jeans - Baggy Streetwear Original",
+    corte: "Baggy Fit",
+    precio: 159.00,
+    precioOriginal: 179.00,
+    descripcion: "Jean Baggy holgado en caderas y muslos con caída ancha hasta los tobillos. La tendencia noventera reinventada con denim peruano de primer nivel.",
     detalles: [
-      "Sello original Bronco USA 1971 Denver Colorado",
-      "Corte Tukson Slim Fit de ajuste ideal",
-      "Parche trasero en cuero en relieve rústico",
-      "Cierre YKK metálico duradero",
-      "Resistencia extrema al uso continuo y lavados"
+      "Silueta Baggy / Bagui holgada",
+      "Cintura entallada y piernas anchas",
+      "100% Algodón de grosor medio",
+      "Estilo relajado streetwear"
+    ],
+    nuevo: true,
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Plomo Claro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.50.jpeg", hexColor: "#94a3b8" },
+      { nombre: "Plomo Oscuro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (3).jpeg", hexColor: "#475569" }
+    ]
+  },
+  {
+    id: "moon-jeans",
+    categoriaId: "pantalones-sueltos",
+    marca: "Element",
+    modelo: "Moon Jeans",
+    nombreCompleto: "Moon Jeans - MOM / Moon Fit Urban",
+    corte: "Moon Fit / MOM",
+    precio: 159.00,
+    precioOriginal: 179.00,
+    descripcion: "Jean Moon Fit con tiro alto y silueta ligeramente curva en muslos que se estrecha en los tobillos. Aporta soltura, volumen y un toque retro audaz.",
+    detalles: [
+      "Corte Moon / MOM vintage de tiro alto",
+      "Volumen holgado anatómico",
+      "Lavado con desgastado artístico",
+      "Entalle anatómico en cadera"
+    ],
+    tallasDisponibles: [28, 30, 32, 34],
+    colores: [
+      { nombre: "Plomo Intermedio", imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (4).jpeg", hexColor: "#64748b" },
+      { nombre: "Maíz", imagen: "/WhatsApp Image 2026-08-10 at 17.29.53 (1).jpeg", hexColor: "#bfdbfe" }
+    ]
+  },
+
+  // -------------------------------------------------------------
+  // 4. SHORT
+  // -------------------------------------------------------------
+  {
+    id: "short-jeans",
+    categoriaId: "short",
+    marca: "Lois",
+    modelo: "Short Jeans",
+    nombreCompleto: "Short Jeans - Lois Summer Edition",
+    corte: "Short Denim",
+    precio: 99.00,
+    precioOriginal: 119.90,
+    descripcion: "Bermuda / Short en denim stretch con acabado deshilachado o doblado. Ideal para días soleados y outfit casual relajado.",
+    detalles: [
+      "Denim stretch liviano de gran movilidad",
+      "Parche e insignias originales Lois",
+      "Bolsillos clásicos de 5 puntos",
+      "Largo cómodo por encima de la rodilla"
+    ],
+    destacado: true,
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Celeste Summer", imagen: "/WhatsApp Image 2026-08-10 at 17.29.42.jpeg", hexColor: "#60a5fa" },
+      { nombre: "Azul Vintage", imagen: "/WhatsApp Image 2026-08-10 at 17.29.44 (3).jpeg", hexColor: "#2563eb" }
+    ]
+  },
+  {
+    id: "short-dril",
+    categoriaId: "short",
+    marca: "Pionier",
+    modelo: "Short Dril",
+    nombreCompleto: "Short Dril Chino Confort",
+    corte: "Short Dril Chino",
+    precio: 89.90,
+    precioOriginal: 109.90,
+    descripcion: "Short estilo chino confeccionado en algodón dril peinado. Fresco, elegante y extremadamente suave al contacto con la piel.",
+    detalles: [
+      "Algodón dril suave de secado rápido",
+      "Bolsillos laterales profundos",
+      "Pretina confort con ajuste perfecto",
+      "Estilo casual elegante"
+    ],
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Beige Khaki", imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (2).jpeg", hexColor: "#d4a373" },
+      { nombre: "Plomo", imagen: "/WhatsApp Image 2026-08-10 at 17.29.48 (3).jpeg", hexColor: "#64748b" }
+    ]
+  },
+  {
+    id: "short-cargo",
+    categoriaId: "short",
+    marca: "Bronco",
+    modelo: "Short Cargo",
+    nombreCompleto: "Short Cargo Utilitario Dril & Denim",
+    corte: "Short Cargo",
+    precio: 99.90,
+    precioOriginal: 119.00,
+    descripcion: "Bermuda cargo con múltiples bolsillos tácticos. Diseñada para actividades al aire libre o un estilo urbano desenfadado.",
+    detalles: [
+      "Bolsillos de fuelle laterales con tapa",
+      "Tejido reforzado anti-desgarro",
+      "Pasadores de correa anchos",
+      "Remaches de metal pavonado"
+    ],
+    nuevo: true,
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Verde Olivo", imagen: "/WhatsApp Image 2026-08-10 at 17.29.47 (3).jpeg", hexColor: "#475569" },
+      { nombre: "Negro", imagen: "/WhatsApp Image 2026-08-10 at 17.29.43.jpeg", hexColor: "#0f172a" }
+    ]
+  },
+  {
+    id: "short-suelto",
+    categoriaId: "short",
+    marca: "Element",
+    modelo: "Short Suelto",
+    nombreCompleto: "Short Suelto Relaxed Fit",
+    corte: "Short Holgado",
+    precio: 95.00,
+    precioOriginal: 115.00,
+    descripcion: "Short de pierna ancha y holgada para total ventilación y libertad de movimiento. La prenda indispensable del verano urbano.",
+    detalles: [
+      "Corte ancho en pierna",
+      "Lavado suave acid wash",
+      "Cintura flexible",
+      "Máximo confort en climas cálidos"
+    ],
+    tallasDisponibles: [28, 30, 32, 34],
+    colores: [
+      { nombre: "Maíz Soft", imagen: "/WhatsApp Image 2026-08-10 at 17.29.52.jpeg", hexColor: "#7dd3fc" },
+      { nombre: "Hielo", imagen: "/WhatsApp Image 2026-08-10 at 17.29.46 (4).jpeg", hexColor: "#93c5fd" }
+    ]
+  },
+  {
+    id: "short-clasico-jeans",
+    categoriaId: "short",
+    marca: "Pionier",
+    modelo: "Short Clásico Jeans",
+    nombreCompleto: "Short Clásico Jeans - Pionier Heritage",
+    corte: "Short Clásico",
+    precio: 99.00,
+    precioOriginal: 119.00,
+    descripcion: "Short de jean tradicional Pionier con bota recta clásica y durabilidad legendaria en denim puro.",
+    detalles: [
+      "Denim 100% Algodón Pionier",
+      "Corte clásico sobrio de bota recta",
+      "Costura reforzada",
+      "Bolsillo relojero tradicional"
+    ],
+    tallasDisponibles: [28, 30, 32, 34, 36],
+    colores: [
+      { nombre: "Azul Cristal", imagen: "/WhatsApp Image 2026-08-10 at 17.29.49.jpeg", hexColor: "#1d4ed8" },
+      { nombre: "Acero", imagen: "/WhatsApp Image 2026-08-10 at 17.29.49 (2).jpeg", hexColor: "#1e3a8a" }
+    ]
+  },
+
+  // -------------------------------------------------------------
+  // 5. CASACAS
+  // -------------------------------------------------------------
+  {
+    id: "casaca-jeans",
+    categoriaId: "casacas",
+    marca: "Lois",
+    modelo: "Casaca Jeans",
+    nombreCompleto: "Casaca Jeans - Lois Trucker Original",
+    corte: "Casaca Denim",
+    precio: 199.00,
+    precioOriginal: 239.00,
+    descripcion: "Casaca de jean modelo Trucker icónico de Lois. Elaborada en denim rígido de alto gramaje con solapas pectorales y ajustadores laterales.",
+    detalles: [
+      "Estructura Trucker icónica vintage",
+      "Botonera metálica con grabado Lois",
+      "Bolsillos superiores con tapa y solapa",
+      "Corte anatómico favorecedor"
+    ],
+    destacado: true,
+    tallasDisponibles: ["S", "M", "L", "XL"],
+    imagenPoster: "/WhatsApp Image 2026-08-10 at 17.29.45.jpeg",
+    colores: [
+      { nombre: "Azul Clásico", imagen: "/WhatsApp Image 2026-08-10 at 17.29.42.jpeg", hexColor: "#2563eb" },
+      { nombre: "Negro Stone", imagen: "/WhatsApp Image 2026-08-10 at 17.29.43.jpeg", hexColor: "#0f172a" }
+    ]
+  },
+  {
+    id: "casaca-peluche-jeans",
+    categoriaId: "casacas",
+    marca: "Bronco",
+    modelo: "Casaca con Peluche Jeans",
+    nombreCompleto: "Casaca Jeans con Peluche Sherpa",
+    corte: "Casaca Sherpa Warm",
+    precio: 229.00,
+    precioOriginal: 269.00,
+    descripcion: "Casaca de jean acolchada con cuello e interior en peluche / sherpa blanco térmico. El abrigo imprescindible con máximo impacto visual y calidez.",
+    detalles: [
+      "Forro interior y cuello de sherpa/peluche ultra suave",
+      "Cuerpo de denim resistente anti-viento",
+      "Bolsillos térmicos reposamanos",
+      "Broches de presión reforzados"
     ],
     destacado: true,
     nuevo: true,
     stockLimitado: true,
-    tallasDisponibles: [28, 30, 32, 34, 36],
+    tallasDisponibles: ["S", "M", "L", "XL"],
     colores: [
-      {
-        nombre: "Negro Stone",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.51.jpeg",
-        hexColor: "#1e293b"
-      },
-      {
-        nombre: "Azul Pacific",
-        imagen: "/WhatsApp Image 2026-08-10 at 17.29.51 (1).jpeg",
-        hexColor: "#1d4ed8"
-      }
+      { nombre: "Azul Winter", imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (1).jpeg", hexColor: "#1d4ed8" },
+      { nombre: "Negro Deep", imagen: "/WhatsApp Image 2026-08-10 at 17.29.45 (2).jpeg", hexColor: "#0f172a" }
     ]
   }
 ];
 
 export const STORE_INFO = {
   nombre: "PLUMAS JEANS",
-  slogan: "Catálogo Digital Exclusivo de Jeans Premium",
+  slogan: "Catálogo Digital Exclusivo de Jeans & Moda Premium",
   telefonoWhatsApp: "51993399915",
   mensajeWhatsAppBase: "¡Hola Plumas Jeans! Vengo de su catálogo digital y deseo información sobre:",
   envios: "Envíos a todo el Perú (Olva Courier, Shalom, Agencia)",
