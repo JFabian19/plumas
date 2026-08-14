@@ -32,14 +32,18 @@ function ProductCardImage({
   activeColor: ColorVariant;
   onOpenDetail: () => void;
 }) {
-  // Build playlist of images: custom imagenes from Sheet (if any), color photo, and model poster
+  // Build playlist of images: combines default garment photo + poster + any custom images from Sheet (deduplicated)
   const imageList = useMemo(() => {
-    if (product.imagenes && product.imagenes.length > 0) {
-      return product.imagenes;
-    }
-    const list = [activeColor.imagen];
+    const list: string[] = [activeColor.imagen];
     if (product.imagenPoster) {
       list.push(product.imagenPoster);
+    }
+    if (product.imagenes && product.imagenes.length > 0) {
+      for (const img of product.imagenes) {
+        if (img && !list.includes(img)) {
+          list.push(img);
+        }
+      }
     }
     return list;
   }, [product.imagenes, activeColor.imagen, product.imagenPoster]);
@@ -152,20 +156,26 @@ function DetailModalGallery({
   selectedColor: ColorVariant;
   onZoom: (img: string) => void;
 }) {
-  // Build playlist of images for detail view
+  // Build playlist of images for detail view: default color + lookbook poster + sheet images
   const galleryImages = useMemo(() => {
-    if (product.imagenes && product.imagenes.length > 0) {
-      return product.imagenes.map((url, i) => ({
-        url,
-        title: `Foto ${i + 1}`,
-        subtitle: `Vista ${i + 1}`
-      }));
-    }
-    const items = [
+    const items: Array<{ url: string; title: string; subtitle: string }> = [
       { url: selectedColor.imagen, title: 'Foto Prenda', subtitle: `Color: ${selectedColor.nombre}` }
     ];
-    if (product.imagenPoster) {
+    if (product.imagenPoster && product.imagenPoster !== selectedColor.imagen) {
       items.push({ url: product.imagenPoster, title: 'Lookbook', subtitle: 'Foto Modelo' });
+    }
+    if (product.imagenes && product.imagenes.length > 0) {
+      let customCounter = 1;
+      for (const imgUrl of product.imagenes) {
+        if (imgUrl && !items.some(it => it.url === imgUrl)) {
+          items.push({
+            url: imgUrl,
+            title: `Foto Extra ${customCounter}`,
+            subtitle: `Detalle ${customCounter}`
+          });
+          customCounter++;
+        }
+      }
     }
     return items;
   }, [product.imagenes, selectedColor.imagen, selectedColor.nombre, product.imagenPoster]);
