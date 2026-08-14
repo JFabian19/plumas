@@ -184,20 +184,20 @@ function extractCategories(csvText: string): Map<string, SheetCategoryUpdate> {
   if (rows.length < 2) return catMap;
 
   const headers = rows[0].map(h => h.toLowerCase().replace(/[^a-z0-9_]/g, '').trim());
-  const idIndex = headers.findIndex(h => h === 'categoria_id' || h === 'categoriaid' || h === 'id' || h === 'categoria' || h === 'nombre');
+  const nameIndex = headers.findIndex(h => h === 'categoria' || h === 'nombre' || h === 'categoria_id' || h === 'id');
   const imgIndex = headers.findIndex(h => h === 'imagen_url' || h === 'imagenurl' || h === 'imagen_header' || h === 'imagen' || h === 'foto');
 
-  if (idIndex === -1 || imgIndex === -1) return catMap;
+  if (nameIndex === -1 || imgIndex === -1) return catMap;
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
-    const catIdRaw = row[idIndex] ? row[idIndex].trim().replace(/^"|"$/g, '') : '';
+    const catNameRaw = row[nameIndex] ? row[nameIndex].trim().replace(/^"|"$/g, '') : '';
     const imgRaw = row[imgIndex] ? cleanImageUrl(row[imgIndex]) : '';
 
-    if (!catIdRaw || !imgRaw) continue;
+    if (!catNameRaw || !imgRaw) continue;
 
-    catMap.set(normalizeKey(catIdRaw), { imagenHeader: imgRaw });
-    catMap.set(catIdRaw.toLowerCase(), { imagenHeader: imgRaw });
+    catMap.set(normalizeKey(catNameRaw), { imagenHeader: imgRaw });
+    catMap.set(catNameRaw.toLowerCase(), { imagenHeader: imgRaw });
   }
 
   return catMap;

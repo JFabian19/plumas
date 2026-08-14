@@ -1,6 +1,6 @@
-categoria_id,nombre,imagen_url
-pantalones-jeans,Pantalones Jeans,https://images.unsplash.com/photo-1542272604-780c96856592?w=800&q=80
-pantalones-dril,Pantalones Dril,https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&q=80
-pantalones-sueltos,Pantalones Sueltos,https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&q=80
-short,Shorts,https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80
-casacas,Casacas,https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80
+categoria,imagen_url
+Pantalones Jeans,https://images.unsplash.com/photo-1542272604-780c96856592?w=800&q=80
+Pantalones Dril,https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&q=80
+Pantalones Sueltos,https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&q=80
+Shorts,https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80
+Casacas,https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80

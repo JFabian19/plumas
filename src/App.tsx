@@ -702,25 +702,25 @@ export default function App() {
             {/* Option: Ver Todas */}
             <button
               onClick={() => selectCategoryAndScroll('Todas')}
-              className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-300 text-left p-4 flex flex-col justify-between h-44 sm:h-52 shadow-md ${
+              className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-300 text-left p-3.5 flex flex-col justify-between h-40 sm:h-48 shadow-md ${
                 selectedCategory === 'Todas'
                   ? 'border-amber-500 bg-amber-50/80 ring-2 ring-amber-400/40'
                   : 'border-slate-200 hover:border-amber-400 bg-slate-50'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center font-bold">
-                  <Layers className="w-4 h-4" />
+                <span className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center font-bold">
+                  <Layers className="w-3.5 h-3.5" />
                 </span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
                   {products.length} Ítems
                 </span>
               </div>
               <div>
-                <h4 className="text-sm sm:text-base font-black font-title text-slate-900 group-hover:text-amber-600 transition-colors uppercase">
+                <h4 className="text-xs sm:text-sm font-extrabold font-title text-slate-900 group-hover:text-amber-600 transition-colors uppercase tracking-wide">
                   VER TODAS
                 </h4>
-                <p className="text-[11px] text-slate-500 font-semibold">Catálogo Completo</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Catálogo Completo</p>
               </div>
             </button>
 
@@ -733,7 +733,7 @@ export default function App() {
                 <button
                   key={cat.id}
                   onClick={() => selectCategoryAndScroll(cat.id)}
-                  className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-300 text-left flex flex-col justify-end h-44 sm:h-52 shadow-md transform hover:-translate-y-1 ${
+                  className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-300 text-left flex flex-col justify-end h-40 sm:h-48 shadow-md transform hover:-translate-y-1 ${
                     isSelected
                       ? 'border-amber-500 ring-4 ring-amber-500/20 scale-[1.02]'
                       : 'border-slate-200 hover:border-amber-500/60'
@@ -747,18 +747,18 @@ export default function App() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent group-hover:opacity-90 transition-opacity" />
 
-                  <div className="relative z-10 p-4 space-y-1 text-white">
+                  <div className="relative z-10 p-3 sm:p-3.5 space-y-1 text-white">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 uppercase tracking-wide">
                         {count} {count === 1 ? 'Modelo' : 'Modelos'}
                       </span>
                     </div>
 
-                    <h4 className="text-sm sm:text-base font-black font-title text-white group-hover:text-amber-300 transition-colors uppercase leading-tight">
+                    <h4 className="text-xs sm:text-sm font-extrabold font-title text-white group-hover:text-amber-300 transition-colors uppercase leading-snug tracking-wide">
                       {cat.nombre}
                     </h4>
                     
-                    <p className="text-[10px] text-slate-200 font-medium line-clamp-1">
+                    <p className="text-[9px] sm:text-[10px] text-slate-300 font-normal line-clamp-1">
                       {cat.subtitulo}
                     </p>
                   </div>
