@@ -402,9 +402,10 @@ export default function App() {
     }));
   };
 
-  // Extract all unique brands and fits
+  // Extract all unique brands, fits and colors
   const brandsList = ['Todas', 'Lois', 'Element', 'Pionier', 'Bronco'];
   const fitsList = ['Todos', 'Corte Clásico', 'Semi Pitillo', 'Slim Fit', 'Baggy Fit', 'Cargo Relajado', 'Short Denim'];
+  const colorsList = ['Todos', 'Azul Clásico', 'Negro', 'Plomo', 'Celeste', 'Beige Khaki', 'Verde Olivo'];
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
