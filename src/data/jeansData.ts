@@ -4,12 +4,12 @@ export interface ColorVariant {
   hexColor: string;
 }
 
-export type CategoriaId = 'pantalones-jeans' | 'pantalones-dril' | 'pantalones-sueltos' | 'short' | 'casacas';
+export type CategoriaId = string;
 
 export interface JeansProduct {
   id: string;
   categoriaId: CategoriaId;
-  marca: 'Lois' | 'Element' | 'Pionier' | 'Bronco' | 'Plumas';
+  marca: string;
   modelo: string;
   nombreCompleto: string;
   corte: string;

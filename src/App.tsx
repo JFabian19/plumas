@@ -77,19 +77,19 @@ function ProductCardImage({
 
   return (
     <div 
-      className="relative w-full h-80 sm:h-96 bg-slate-100/90 flex items-center justify-center p-4 overflow-hidden cursor-pointer group-hover:bg-slate-200/60 transition-all select-none"
+      className="relative w-full aspect-[4/5] sm:aspect-[3/4] max-h-[360px] bg-slate-100/90 flex items-center justify-center p-2 sm:p-4 overflow-hidden cursor-pointer group-hover:bg-slate-200/60 transition-all select-none"
       onClick={onOpenDetail}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Top Badges Container - Never Colliding */}
-      <div className="absolute top-3 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-1.5 pointer-events-auto">
-          <span className="px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-[11px] tracking-wide uppercase shadow-md">
+      <div className="absolute top-2 inset-x-2 sm:top-3 sm:inset-x-3 z-20 flex items-start justify-between gap-1 pointer-events-none">
+        <div className="flex flex-col xs:flex-row items-start xs:items-center gap-1 pointer-events-auto shrink-0">
+          <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-[9px] sm:text-[11px] tracking-wide uppercase shadow-sm">
             {product.marca}
           </span>
           {product.stockLimitado && (
-            <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
+            <span className="px-1.5 py-0.5 rounded bg-slate-900/90 text-rose-300 border border-rose-400/40 text-[8px] sm:text-[9px] font-bold tracking-wider uppercase shadow-sm">
               Stock Limitado
             </span>
           )}
@@ -98,10 +98,10 @@ function ProductCardImage({
         {imageList.length > 1 && (
           <button
             onClick={nextImage}
-            className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 hover:bg-white text-slate-800 border border-slate-200 text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all backdrop-blur-md active:scale-95"
+            className="pointer-events-auto px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/95 hover:bg-white text-slate-800 border border-slate-200 text-[9px] sm:text-[11px] font-bold flex items-center gap-1 shadow-sm transition-all backdrop-blur-md active:scale-95 shrink-0"
             title="Toca para cambiar foto"
           >
-            <Eye className="w-3.5 h-3.5 text-amber-600" />
+            <Eye className="w-3 h-3 text-amber-600 shrink-0" />
             <span>Foto {viewIndex + 1}/{imageList.length}</span>
           </button>
         )}
@@ -116,26 +116,26 @@ function ProductCardImage({
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
           className="max-w-full max-h-full w-auto h-auto object-contain object-center drop-shadow-md group-hover:scale-105 transition-transform duration-500 ease-out"
         />
       </AnimatePresence>
 
       {/* Bottom Floating Info & Indicator Pill */}
-      <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-        <span className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-md text-amber-800 font-bold text-xs border border-slate-200 shadow-md">
+      <div className="absolute bottom-2 inset-x-2 sm:bottom-3 sm:inset-x-3 z-10 flex items-center justify-between gap-1 pointer-events-none">
+        <span className="pointer-events-auto px-2 py-0.5 rounded-md sm:rounded-lg bg-white/95 backdrop-blur-md text-amber-800 font-bold text-[9px] sm:text-xs border border-slate-200 shadow-sm truncate max-w-[65%]">
           {product.imagenes && product.imagenes.length > 0 
-            ? `📸 Foto ${viewIndex + 1} de ${imageList.length}`
-            : isPoster ? '📸 Foto Modelo' : `Color: ${activeColor.nombre}`}
+            ? `📸 Foto ${viewIndex + 1}/${imageList.length}`
+            : isPoster ? '📸 Modelo' : `Color: ${activeColor.nombre}`}
         </span>
 
         {imageList.length > 1 && (
-          <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 shadow-sm">
+          <div className="pointer-events-auto flex items-center gap-1 bg-slate-900/80 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-white/20 shadow-sm shrink-0">
             {imageList.map((_, idx) => (
               <button
                 key={idx}
                 onClick={(e) => { e.stopPropagation(); setViewIndex(idx); }}
-                className={`w-2 h-2 rounded-full transition-all ${viewIndex === idx ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
+                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${viewIndex === idx ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
                 title={`Ver foto ${idx + 1}`}
               />
             ))}
@@ -276,8 +276,10 @@ function DetailModalGallery({
 }
 
 export default function App() {
-  // Google Sheets live data (prices, custom images, category banners)
+  // Google Sheets live data (products, categories, prices, custom images)
   const [sheetData, setSheetData] = useState<SheetData>({
+    products: JEANS_PRODUCTS,
+    categories: CATEGORIAS_JEANS,
     productsByName: new Map(),
     productsById: new Map(),
     categoriesById: new Map()
@@ -286,46 +288,19 @@ export default function App() {
   // Fetch data from Google Sheets on page load
   useEffect(() => {
     fetchLiveSheetData().then(data => {
-      if (data.productsByName.size > 0 || data.productsById.size > 0 || data.categoriesById.size > 0) {
+      if (data.products && data.products.length > 0) {
         setSheetData(data);
       }
+    }).catch(err => {
+      console.warn('Error fetching live Google Sheet data:', err);
     });
   }, []);
 
-  // Merge sheet updates into products: matching by nombreCompleto / modelo / id
-  const products = useMemo(() => {
-    if (sheetData.productsByName.size === 0 && sheetData.productsById.size === 0) return JEANS_PRODUCTS;
-    return JEANS_PRODUCTS.map(product => {
-      // Find update by product ID or normalized product name / model
-      const updateById = sheetData.productsById.get(product.id);
-      const updateByName = sheetData.productsByName.get(normalizeKey(product.nombreCompleto)) ||
-                           sheetData.productsByName.get(normalizeKey(product.modelo));
-      const update = updateByName || updateById;
+  // Merged products list from Google Sheets (or fallback static catalog)
+  const products = useMemo(() => sheetData.products, [sheetData.products]);
 
-      if (update) {
-        return {
-          ...product,
-          precio: update.precio !== undefined ? update.precio : product.precio,
-          imagenes: update.imagenes && update.imagenes.length > 0 ? update.imagenes : product.imagenes
-        };
-      }
-      return product;
-    });
-  }, [sheetData]);
-
-  // Merge category header images if specified in Google Sheets (Categorias tab)
-  const categories = useMemo(() => {
-    if (sheetData.categoriesById.size === 0) return CATEGORIAS_JEANS;
-    return CATEGORIAS_JEANS.map(cat => {
-      const catUpdate = sheetData.categoriesById.get(normalizeKey(cat.id)) ||
-                        sheetData.categoriesById.get(normalizeKey(cat.nombre)) ||
-                        sheetData.categoriesById.get(cat.id.toLowerCase());
-      if (catUpdate && catUpdate.imagenHeader) {
-        return { ...cat, imagenHeader: catUpdate.imagenHeader };
-      }
-      return cat;
-    });
-  }, [sheetData]);
+  // Merged categories list (including any new categories created in Google Sheets)
+  const categories = useMemo(() => sheetData.categories, [sheetData.categories]);
 
   // Category filter state ('Todas' or specific CategoriaId)
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
@@ -412,10 +387,25 @@ export default function App() {
     }));
   };
 
-  // Extract all unique brands, fits and colors
-  const brandsList = ['Todas', 'Lois', 'Element', 'Pionier', 'Bronco'];
-  const fitsList = ['Todos', 'Corte Clásico', 'Semi Pitillo', 'Slim Fit', 'Baggy Fit', 'Cargo Relajado', 'Short Denim'];
-  const colorsList = ['Todos', 'Azul Clásico', 'Negro', 'Plomo', 'Celeste', 'Beige Khaki', 'Verde Olivo'];
+  // Dynamic brands list from active products
+  const brandsList = useMemo(() => {
+    const brands = new Set<string>();
+    for (const p of products) {
+      if (p.marca) brands.add(p.marca);
+    }
+    return ['Todas', ...Array.from(brands)];
+  }, [products]);
+
+  // Dynamic fits list from active products
+  const fitsList = useMemo(() => {
+    const fits = new Set<string>();
+    for (const p of products) {
+      if (p.corte) fits.add(p.corte);
+    }
+    return ['Todos', ...Array.from(fits)];
+  }, [products]);
+
+  const colorsList = ['Todos', 'Azul', 'Negro', 'Plomo', 'Celeste', 'Beige', 'Verde', 'Maíz'];
 
   // Filtered Products
   const filteredProducts = useMemo(() => {
@@ -434,7 +424,9 @@ export default function App() {
       }
       // Color filter
       if (selectedColorFilter !== 'Todos') {
-        const hasColor = product.colores.some(c => c.nombre.toLowerCase() === selectedColorFilter.toLowerCase());
+        const hasColor = product.colores.some(c => 
+          normalizeKey(c.nombre).includes(normalizeKey(selectedColorFilter))
+        );
         if (!hasColor) return false;
       }
       // Search Query
@@ -707,8 +699,8 @@ export default function App() {
             </p>
           </div>
 
-          {/* 5 CATEGORY WINDOW CARDS GRID */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
+          {/* CATEGORY WINDOW CARDS GRID - DYNAMIC & RESPONSIVE */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             
             {/* Option: Ver Todas */}
             <button
@@ -969,7 +961,7 @@ export default function App() {
                       No hay productos disponibles bajo esta selección.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-6 lg:gap-8">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 xs:gap-3.5 sm:gap-5 md:gap-6">
                       {catProducts.map(product => {
                         const activeColor = getActiveColor(product);
                         const precioFormateado = formatPrice(product.precio);
@@ -978,9 +970,9 @@ export default function App() {
                           <motion.div
                             key={product.id}
                             layout
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 15 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.25 }}
                             className="group relative flex flex-col rounded-2xl bg-white border border-slate-200 hover:border-amber-500/60 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-xl"
                           >
                             {/* 🖼️ CARD IMAGE SLIDESHOW WITH SMOOTH AUTO-TRANSITION */}
@@ -990,28 +982,28 @@ export default function App() {
                               onOpenDetail={() => handleOpenDetailModal(product, activeColor)}
                             />
 
-                            {/* Card Content Details - Light Mode */}
-                            <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3 bg-white">
+                            {/* Card Content Details - Anti-Overlap Design */}
+                            <div className="p-2.5 xs:p-3 sm:p-4 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3 bg-white">
                               <div>
                                 {/* Fit tag & price in non-colliding flex header */}
-                                <div className="flex items-center justify-between gap-2 mb-1.5">
-                                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider">
+                                <div className="flex items-center justify-between gap-1 mb-1">
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider truncate max-w-[55%]" title={product.corte}>
                                     {product.corte}
                                   </span>
                                   <div className="text-right shrink-0">
                                     {precioFormateado ? (
-                                      <div className="flex items-baseline justify-end gap-1.5">
+                                      <div className="flex items-baseline justify-end gap-1">
                                         {product.precioOriginal && product.precioOriginal > 0 && (
-                                          <span className="text-[11px] text-slate-400 line-through font-normal">
+                                          <span className="text-[9px] sm:text-[11px] text-slate-400 line-through font-normal">
                                             {formatPrice(product.precioOriginal)}
                                           </span>
                                         )}
-                                        <span className="text-base sm:text-lg font-bold text-amber-600 font-title">
+                                        <span className="text-xs xs:text-sm sm:text-base font-black text-amber-600 font-title">
                                           {precioFormateado}
                                         </span>
                                       </div>
                                     ) : (
-                                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                      <span className="text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                                         Consultar
                                       </span>
                                     )}
@@ -1021,42 +1013,43 @@ export default function App() {
                                 {/* Product Title */}
                                 <h4 
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer leading-snug"
+                                  className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors cursor-pointer leading-tight line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]"
+                                  title={product.nombreCompleto}
                                 >
                                   {product.nombreCompleto}
                                 </h4>
 
-                                <p className="text-[11px] sm:text-xs text-slate-500 mt-1 leading-relaxed">
+                                <p className="hidden sm:block text-[11px] sm:text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
                                   {product.descripcion}
                                 </p>
                               </div>
 
                               {/* Colors & Sizes Information Badge */}
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2.5 border-t border-slate-100">
-                                <span className="text-slate-600">
-                                  <strong className="text-amber-700 font-semibold">{product.colores.length}</strong> {product.colores.length === 1 ? 'color' : 'colores'}
+                              <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-500 pt-1.5 sm:pt-2 border-t border-slate-100 gap-1">
+                                <span className="text-slate-600 shrink-0">
+                                  <strong className="text-amber-700 font-bold">{product.colores.length}</strong> {product.colores.length === 1 ? 'col.' : 'colores'}
                                 </span>
-                                <span className="text-slate-600">
-                                  Tallas: <strong className="text-slate-800 font-semibold">{product.tallasDisponibles.join(', ')}</strong>
+                                <span className="text-slate-600 truncate text-right max-w-[58%]">
+                                  Tallas: <strong className="text-slate-800 font-semibold">{product.tallasDisponibles.slice(0, 3).join(',')}{product.tallasDisponibles.length > 3 ? '..' : ''}</strong>
                                 </span>
                               </div>
 
-                              {/* Card Action Buttons: Open Modal to Configure Color & Size */}
-                              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                              {/* Card Action Buttons: Compact, responsive, no overflow */}
+                              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-[10px] sm:text-xs uppercase tracking-wide transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95"
                                 >
-                                  <ShoppingBag className="w-3.5 h-3.5" />
-                                  <span>Añadir</span>
+                                  <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                                  <span className="truncate">Añadir</span>
                                 </button>
 
                                 <button
                                   onClick={() => handleOpenDetailModal(product, activeColor)}
-                                  className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  className="py-2 sm:py-2.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] sm:text-xs transition-all flex items-center justify-center gap-1 shadow-sm active:scale-95"
                                 >
-                                  <Smartphone className="w-3.5 h-3.5" />
-                                  <span>WhatsApp</span>
+                                  <Smartphone className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                                  <span className="truncate">WhatsApp</span>
                                 </button>
                               </div>
 
