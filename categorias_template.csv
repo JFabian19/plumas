@@ -1,6 +1,6 @@
-categoria_id,nombre,subtitulo,descripcion,badge
-pantalones-jeans,Pantalones Jeans,Cortes Clásicos Pitillos y Strech,Confeccionados en denim de alta calidad con tecnología stretch y acabados de lavado exclusivo.,Colección Clásica
-pantalones-dril,Pantalones Dril,Estilo Ejecutivo & Urbano en Algodón Dril,Pantalones de corte impecable y tejido dril confortable ideales para el día a día y ocasiones vestir.,Confort Versátil
-pantalones-sueltos,Pantalones Sueltos,Cargo Jeans Bagui Fit & Moon Jeans,Siluetas holgadas y tendencia streetwear para el máximo confort y soltura.,Tendencia Urbana
-short,Shorts,Shorts Jeans Dril Cargo y Sueltos,Frescura soltura y durabilidad para días calurosos o estilo urbano veraniego.,Frescura & Moda
-casacas,Casacas,Casacas Jeans Clásicas & con Peluche Sherpa,Abrigo con actitud denim diseñadas para durar y destacar en cualquier look.,Outerwear Premium
+categoria_id,nombre,imagen_url
+pantalones-jeans,Pantalones Jeans,https://images.unsplash.com/photo-1542272604-780c96856592?w=800&q=80
+pantalones-dril,Pantalones Dril,https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800&q=80
+pantalones-sueltos,Pantalones Sueltos,https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&q=80
+short,Shorts,https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=800&q=80
+casacas,Casacas,https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&q=80

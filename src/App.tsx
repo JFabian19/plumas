@@ -12,7 +12,7 @@ import {
   SHOWCASE_MODEL_IMAGE, MARQUEE_ANNOUNCEMENT, STORE_INFO,
   CATEGORIAS_JEANS, CategoriaJeans, CategoriaId
 } from './data/jeansData';
-import { fetchPricesFromSheet } from './utils/sheetPriceFetcher';
+import { fetchLiveSheetData, normalizeKey, SheetData } from './utils/sheetPriceFetcher';
 
 interface CartItem {
   id: string; // product id + color + size
@@ -32,26 +32,42 @@ function ProductCardImage({
   activeColor: ColorVariant;
   onOpenDetail: () => void;
 }) {
-  const hasPoster = !!product.imagenPoster;
-  const [viewIndex, setViewIndex] = useState<0 | 1>(0); // 0: product cutout, 1: model poster
+  // Build playlist of images: custom imagenes from Sheet (if any), color photo, and model poster
+  const imageList = useMemo(() => {
+    if (product.imagenes && product.imagenes.length > 0) {
+      return product.imagenes;
+    }
+    const list = [activeColor.imagen];
+    if (product.imagenPoster) {
+      list.push(product.imagenPoster);
+    }
+    return list;
+  }, [product.imagenes, activeColor.imagen, product.imagenPoster]);
+
+  const [viewIndex, setViewIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto transition every 3.5 seconds if poster exists
+  // Reset view index if active color or image list changes
   useEffect(() => {
-    if (!hasPoster || isPaused) return;
+    setViewIndex(0);
+  }, [activeColor.imagen, product.imagenes]);
+
+  // Auto transition every 3.5 seconds if multiple images exist
+  useEffect(() => {
+    if (imageList.length <= 1 || isPaused) return;
     const interval = setInterval(() => {
-      setViewIndex(prev => (prev === 0 ? 1 : 0));
+      setViewIndex(prev => (prev + 1) % imageList.length);
     }, 3500);
     return () => clearInterval(interval);
-  }, [hasPoster, isPaused]);
+  }, [imageList.length, isPaused]);
 
-  const currentImage = viewIndex === 1 && product.imagenPoster ? product.imagenPoster : activeColor.imagen;
-  const isPoster = viewIndex === 1 && hasPoster;
+  const currentImage = imageList[viewIndex] || activeColor.imagen;
+  const isPoster = !product.imagenes?.length && product.imagenPoster && viewIndex === 1;
 
-  const toggleView = (e: React.MouseEvent) => {
+  const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (hasPoster) {
-      setViewIndex(prev => (prev === 0 ? 1 : 0));
+    if (imageList.length > 1) {
+      setViewIndex(prev => (prev + 1) % imageList.length);
     }
   };
 
@@ -75,14 +91,14 @@ function ProductCardImage({
           )}
         </div>
 
-        {hasPoster && (
+        {imageList.length > 1 && (
           <button
-            onClick={toggleView}
+            onClick={nextImage}
             className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 hover:bg-white text-slate-800 border border-slate-200 text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all backdrop-blur-md active:scale-95"
-            title="Toca para cambiar vista foto / modelo"
+            title="Toca para cambiar foto"
           >
             <Eye className="w-3.5 h-3.5 text-amber-600" />
-            <span>{isPoster ? 'Ver Jean' : 'Ver Modelo'}</span>
+            <span>Foto {viewIndex + 1}/{imageList.length}</span>
           </button>
         )}
       </div>
@@ -90,9 +106,9 @@ function ProductCardImage({
       {/* Crossfading Smooth Image Transition */}
       <AnimatePresence mode="wait">
         <motion.img
-          key={`${product.id}-${isPoster ? 'poster' : activeColor.nombre}`}
+          key={`${product.id}-${viewIndex}-${currentImage}`}
           src={currentImage}
-          alt={`${product.nombreCompleto} ${isPoster ? 'Modelo' : activeColor.nombre}`}
+          alt={`${product.nombreCompleto} foto ${viewIndex + 1}`}
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.98 }}
@@ -104,21 +120,21 @@ function ProductCardImage({
       {/* Bottom Floating Info & Indicator Pill */}
       <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
         <span className="pointer-events-auto px-2.5 py-1 rounded-lg bg-white/95 backdrop-blur-md text-amber-800 font-bold text-xs border border-slate-200 shadow-md">
-          {isPoster ? '📸 Foto Modelo' : `Color: ${activeColor.nombre}`}
+          {product.imagenes && product.imagenes.length > 0 
+            ? `📸 Foto ${viewIndex + 1} de ${imageList.length}`
+            : isPoster ? '📸 Foto Modelo' : `Color: ${activeColor.nombre}`}
         </span>
 
-        {hasPoster && (
+        {imageList.length > 1 && (
           <div className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 shadow-sm">
-            <button
-              onClick={(e) => { e.stopPropagation(); setViewIndex(0); }}
-              className={`w-2 h-2 rounded-full transition-all ${!isPoster ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
-              title="Foto Jean"
-            />
-            <button
-              onClick={(e) => { e.stopPropagation(); setViewIndex(1); }}
-              className={`w-2 h-2 rounded-full transition-all ${isPoster ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
-              title="Foto Modelo"
-            />
+            {imageList.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.stopPropagation(); setViewIndex(idx); }}
+                className={`w-2 h-2 rounded-full transition-all ${viewIndex === idx ? 'bg-amber-400 scale-125' : 'bg-slate-500 hover:bg-slate-400'}`}
+                title={`Ver foto ${idx + 1}`}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -136,25 +152,42 @@ function DetailModalGallery({
   selectedColor: ColorVariant;
   onZoom: (img: string) => void;
 }) {
-  const [activeView, setActiveView] = useState<'color' | 'poster'>('color');
+  // Build playlist of images for detail view
+  const galleryImages = useMemo(() => {
+    if (product.imagenes && product.imagenes.length > 0) {
+      return product.imagenes.map((url, i) => ({
+        url,
+        title: `Foto ${i + 1}`,
+        subtitle: `Vista ${i + 1}`
+      }));
+    }
+    const items = [
+      { url: selectedColor.imagen, title: 'Foto Prenda', subtitle: `Color: ${selectedColor.nombre}` }
+    ];
+    if (product.imagenPoster) {
+      items.push({ url: product.imagenPoster, title: 'Lookbook', subtitle: 'Foto Modelo' });
+    }
+    return items;
+  }, [product.imagenes, selectedColor.imagen, selectedColor.nombre, product.imagenPoster]);
+
+  const [activeIdx, setActiveIdx] = useState<number>(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto transition between color photo and model poster every 3.5s
+  // When color selection changes, reset to index 0
   useEffect(() => {
-    if (!product.imagenPoster || isPaused) return;
+    setActiveIdx(0);
+  }, [selectedColor.imagen, product.imagenes]);
+
+  // Auto transition every 3.5s
+  useEffect(() => {
+    if (galleryImages.length <= 1 || isPaused) return;
     const timer = setInterval(() => {
-      setActiveView(prev => (prev === 'color' ? 'poster' : 'color'));
+      setActiveIdx(prev => (prev + 1) % galleryImages.length);
     }, 3500);
     return () => clearInterval(timer);
-  }, [product.imagenPoster, isPaused, selectedColor]);
+  }, [galleryImages.length, isPaused]);
 
-  // When color selection changes, show the color photo first
-  useEffect(() => {
-    setActiveView('color');
-  }, [selectedColor]);
-
-  const currentImg = activeView === 'poster' && product.imagenPoster ? product.imagenPoster : selectedColor.imagen;
-  const isPoster = activeView === 'poster' && !!product.imagenPoster;
+  const currentItem = galleryImages[activeIdx] || galleryImages[0];
 
   return (
     <div 
@@ -164,14 +197,14 @@ function DetailModalGallery({
     >
       {/* Big Main Image Container */}
       <div 
-        onClick={() => onZoom(currentImg)}
+        onClick={() => onZoom(currentItem.url)}
         className="relative bg-slate-50 rounded-3xl border border-slate-200 overflow-hidden flex items-center justify-center p-4 sm:p-6 min-h-[340px] sm:min-h-[420px] cursor-zoom-in group shadow-sm"
       >
         <AnimatePresence mode="wait">
           <motion.img
-            key={`${product.id}-${isPoster ? 'poster' : selectedColor.nombre}`}
-            src={currentImg}
-            alt={`${product.nombreCompleto} ${isPoster ? 'Modelo' : selectedColor.nombre}`}
+            key={`${product.id}-${activeIdx}-${currentItem.url}`}
+            src={currentItem.url}
+            alt={`${product.nombreCompleto} ${currentItem.title}`}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
@@ -202,41 +235,30 @@ function DetailModalGallery({
       </div>
 
       {/* Thumbnails / Switcher Bar */}
-      {product.imagenPoster && (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveView('color')}
-            className={`flex-1 flex items-center gap-2.5 p-2 rounded-2xl border transition-all ${
-              activeView === 'color'
-                ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
-                : 'bg-white border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="w-12 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-1 border border-slate-200 shrink-0">
-              <img src={selectedColor.imagen} alt="Jean" className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="text-left min-w-0">
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Foto Prenda</span>
-              <span className="text-xs font-black text-slate-900 truncate block">Color: {selectedColor.nombre}</span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveView('poster')}
-            className={`flex-1 flex items-center gap-2.5 p-2 rounded-2xl border transition-all ${
-              activeView === 'poster'
-                ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
-                : 'bg-white border-slate-200 hover:border-slate-300'
-            }`}
-          >
-            <div className="w-12 h-14 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-1 border border-slate-200 shrink-0">
-              <img src={product.imagenPoster} alt="Modelo" className="max-w-full max-h-full object-contain" />
-            </div>
-            <div className="text-left min-w-0">
-              <span className="text-[10px] font-bold text-slate-500 uppercase block">Lookbook</span>
-              <span className="text-xs font-black text-slate-900 truncate block">Foto Modelo</span>
-            </div>
-          </button>
+      {galleryImages.length > 1 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          {galleryImages.map((imgItem, idx) => {
+            const isSelected = activeIdx === idx;
+            return (
+              <button
+                key={idx}
+                onClick={() => setActiveIdx(idx)}
+                className={`flex items-center gap-2 p-2 rounded-2xl border transition-all text-left ${
+                  isSelected
+                    ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
+                    : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="w-10 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-0.5 border border-slate-200 shrink-0">
+                  <img src={imgItem.url} alt={imgItem.title} className="max-w-full max-h-full object-contain" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block truncate">{imgItem.title}</span>
+                  <span className="text-xs font-bold text-slate-900 truncate block">{imgItem.subtitle}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -244,29 +266,56 @@ function DetailModalGallery({
 }
 
 export default function App() {
-  // Google Sheets live prices (fetched on mount)
-  const [sheetPrices, setSheetPrices] = useState<Map<string, number>>(new Map());
+  // Google Sheets live data (prices, custom images, category banners)
+  const [sheetData, setSheetData] = useState<SheetData>({
+    productsByName: new Map(),
+    productsById: new Map(),
+    categoriesById: new Map()
+  });
 
-  // Fetch prices from Google Sheets on page load
+  // Fetch data from Google Sheets on page load
   useEffect(() => {
-    fetchPricesFromSheet().then(priceMap => {
-      if (priceMap.size > 0) {
-        setSheetPrices(priceMap);
+    fetchLiveSheetData().then(data => {
+      if (data.productsByName.size > 0 || data.productsById.size > 0 || data.categoriesById.size > 0) {
+        setSheetData(data);
       }
     });
   }, []);
 
-  // Merge sheet prices into products: if a price exists in the Sheet, use it
+  // Merge sheet updates into products: matching by nombreCompleto / modelo / id
   const products = useMemo(() => {
-    if (sheetPrices.size === 0) return JEANS_PRODUCTS;
+    if (sheetData.productsByName.size === 0 && sheetData.productsById.size === 0) return JEANS_PRODUCTS;
     return JEANS_PRODUCTS.map(product => {
-      const sheetPrice = sheetPrices.get(product.id);
-      if (sheetPrice !== undefined) {
-        return { ...product, precio: sheetPrice };
+      // Find update by product ID or normalized product name / model
+      const updateById = sheetData.productsById.get(product.id);
+      const updateByName = sheetData.productsByName.get(normalizeKey(product.nombreCompleto)) ||
+                           sheetData.productsByName.get(normalizeKey(product.modelo));
+      const update = updateByName || updateById;
+
+      if (update) {
+        return {
+          ...product,
+          precio: update.precio !== undefined ? update.precio : product.precio,
+          imagenes: update.imagenes && update.imagenes.length > 0 ? update.imagenes : product.imagenes
+        };
       }
       return product;
     });
-  }, [sheetPrices]);
+  }, [sheetData]);
+
+  // Merge category header images if specified in Google Sheets (Categorias tab)
+  const categories = useMemo(() => {
+    if (sheetData.categoriesById.size === 0) return CATEGORIAS_JEANS;
+    return CATEGORIAS_JEANS.map(cat => {
+      const catUpdate = sheetData.categoriesById.get(normalizeKey(cat.id)) ||
+                        sheetData.categoriesById.get(normalizeKey(cat.nombre)) ||
+                        sheetData.categoriesById.get(cat.id.toLowerCase());
+      if (catUpdate && catUpdate.imagenHeader) {
+        return { ...cat, imagenHeader: catUpdate.imagenHeader };
+      }
+      return cat;
+    });
+  }, [sheetData]);
 
   // Category filter state ('Todas' or specific CategoriaId)
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
@@ -676,7 +725,7 @@ export default function App() {
             </button>
 
             {/* 5 Main Category Cards */}
-            {CATEGORIAS_JEANS.map(cat => {
+            {categories.map(cat => {
               const count = products.filter(p => p.categoriaId === cat.id).length;
               const isSelected = selectedCategory === cat.id;
 
@@ -729,7 +778,7 @@ export default function App() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xl sm:text-2xl font-extrabold font-title text-slate-900">
-                  {selectedCategory === 'Todas' ? 'TODOS LOS PRODUCTOS' : CATEGORIAS_JEANS.find(c => c.id === selectedCategory)?.nombre.toUpperCase()}
+                  {selectedCategory === 'Todas' ? 'TODOS LOS PRODUCTOS' : categories.find(c => c.id === selectedCategory)?.nombre.toUpperCase()}
                 </h3>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
                   {filteredProducts.length} Productos
@@ -784,14 +833,14 @@ export default function App() {
 
             {/* Fit Filter */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-              <span className="font-bold text-blue-700 uppercase text-[11px] shrink-0">Corte:</span>
+              <span className="font-bold text-amber-700 uppercase text-[11px] shrink-0">Corte:</span>
               {fitsList.map(fit => (
                 <button
                   key={fit}
                   onClick={() => setSelectedFit(fit)}
                   className={`px-2.5 py-1 rounded-lg font-bold transition-all text-[11px] border ${
                     selectedFit === fit
-                      ? 'bg-blue-600 text-white border-blue-500 shadow-sm'
+                      ? 'bg-blue-900 text-white border-blue-800 shadow-sm'
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
@@ -800,12 +849,37 @@ export default function App() {
               ))}
             </div>
 
-            {selectedCategory !== 'Todas' && (
+            {/* Colors Filter */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <span className="font-bold text-amber-700 uppercase text-[11px] shrink-0">Color:</span>
+              {colorsList.map(cName => (
+                <button
+                  key={cName}
+                  onClick={() => setSelectedColorFilter(cName)}
+                  className={`px-2.5 py-1 rounded-lg font-bold transition-all text-[11px] border ${
+                    selectedColorFilter === cName
+                      ? 'bg-slate-900 text-amber-300 border-slate-800 shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {cName}
+                </button>
+              ))}
+            </div>
+
+            {/* Clear All Filters Button */}
+            {(selectedBrand !== 'Todas' || selectedFit !== 'Todos' || selectedColorFilter !== 'Todos' || searchQuery) && (
               <button
-                onClick={() => setSelectedCategory('Todas')}
-                className="text-amber-700 hover:underline text-[11px] font-extrabold ml-auto"
+                onClick={() => {
+                  setSelectedBrand('Todas');
+                  setSelectedFit('Todos');
+                  setSelectedColorFilter('Todos');
+                  setSearchQuery('');
+                }}
+                className="text-amber-700 hover:text-amber-800 font-extrabold flex items-center gap-1 ml-auto text-[11px]"
               >
-                Ver Todas las Categorías
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Limpiar Filtros</span>
               </button>
             )}
 
@@ -839,7 +913,7 @@ export default function App() {
           </div>
         ) : (
           <div className="space-y-16">
-            {CATEGORIAS_JEANS.map(cat => {
+            {categories.map(cat => {
               const catProducts = filteredProducts.filter(p => p.categoriaId === cat.id);
               
               // Skip category if single category selected and this isn't it

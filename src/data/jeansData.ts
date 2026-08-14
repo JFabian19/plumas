@@ -22,6 +22,7 @@ export interface JeansProduct {
   stockLimitado?: boolean;
   tallasDisponibles: (number | string)[];
   imagenPoster?: string;
+  imagenes?: string[];
   colores: ColorVariant[];
 }
 
