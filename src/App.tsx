@@ -32,10 +32,15 @@ function ProductCardImage({
   activeColor: ColorVariant;
   onOpenDetail: () => void;
 }) {
-  // Build playlist of images: combines default garment photo + poster + any custom images from Sheet (deduplicated)
+  // Build playlist of images: combines default garment photo + model photos + any custom images from Sheet (deduplicated)
   const imageList = useMemo(() => {
     const list: string[] = [activeColor.imagen];
-    if (product.imagenPoster) {
+    if (product.imagenesModelo && product.imagenesModelo.length > 0) {
+      for (const m of product.imagenesModelo) {
+        if (m && !list.includes(m)) list.push(m);
+      }
+    }
+    if (product.imagenPoster && !list.includes(product.imagenPoster)) {
       list.push(product.imagenPoster);
     }
     if (product.imagenes && product.imagenes.length > 0) {
@@ -46,7 +51,7 @@ function ProductCardImage({
       }
     }
     return list;
-  }, [product.imagenes, activeColor.imagen, product.imagenPoster]);
+  }, [product.imagenes, product.imagenesModelo, activeColor.imagen, product.imagenPoster]);
 
   const [viewIndex, setViewIndex] = useState<number>(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -54,7 +59,7 @@ function ProductCardImage({
   // Reset view index if active color or image list changes
   useEffect(() => {
     setViewIndex(0);
-  }, [activeColor.imagen, product.imagenes]);
+  }, [activeColor.imagen, product.imagenes, product.imagenesModelo]);
 
   // Auto transition every 3.5 seconds if multiple images exist
   useEffect(() => {
@@ -66,7 +71,8 @@ function ProductCardImage({
   }, [imageList.length, isPaused]);
 
   const currentImage = imageList[viewIndex] || activeColor.imagen;
-  const isPoster = !product.imagenes?.length && product.imagenPoster && viewIndex === 1;
+  const isModelImage = (product.imagenesModelo && product.imagenesModelo.includes(currentImage)) || 
+                       (product.imagenPoster === currentImage && currentImage !== activeColor.imagen);
 
   const nextImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,11 +104,10 @@ function ProductCardImage({
         {imageList.length > 1 && (
           <button
             onClick={nextImage}
-            className="pointer-events-auto px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-white/95 hover:bg-white text-slate-800 border border-slate-200 text-[9px] sm:text-[11px] font-bold flex items-center gap-1 shadow-sm transition-all backdrop-blur-md active:scale-95 shrink-0"
-            title="Toca para cambiar foto"
+            className="pointer-events-auto p-1.5 rounded-full bg-slate-900/70 hover:bg-slate-900 text-white backdrop-blur-md transition-all shrink-0 border border-white/20 shadow-sm"
+            title="Siguiente foto"
           >
-            <Eye className="w-3 h-3 text-amber-600 shrink-0" />
-            <span>Foto {viewIndex + 1}/{imageList.length}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
@@ -124,9 +129,11 @@ function ProductCardImage({
       {/* Bottom Floating Info & Indicator Pill */}
       <div className="absolute bottom-2 inset-x-2 sm:bottom-3 sm:inset-x-3 z-10 flex items-center justify-between gap-1 pointer-events-none">
         <span className="pointer-events-auto px-2 py-0.5 rounded-md sm:rounded-lg bg-white/95 backdrop-blur-md text-amber-800 font-bold text-[9px] sm:text-xs border border-slate-200 shadow-sm truncate max-w-[65%]">
-          {product.imagenes && product.imagenes.length > 0 
+          {isModelImage
+            ? '📸 Foto Modelo'
+            : product.imagenes && product.imagenes.length > 0 
             ? `📸 Foto ${viewIndex + 1}/${imageList.length}`
-            : isPoster ? '📸 Modelo' : `Color: ${activeColor.nombre}`}
+            : `Color: ${activeColor.nombre}`}
         </span>
 
         {imageList.length > 1 && (
@@ -146,7 +153,7 @@ function ProductCardImage({
   );
 }
 
-// 🔍 Detail Modal Gallery Component with Auto-Transition Slideshow & Thumbnails
+// 🔍 Detail Modal Gallery Component with Static Display, Thumbnails & Arrow Navigation
 function DetailModalGallery({
   product,
   selectedColor,
@@ -156,14 +163,34 @@ function DetailModalGallery({
   selectedColor: ColorVariant;
   onZoom: (img: string) => void;
 }) {
-  // Build playlist of images for detail view: default color + lookbook poster + sheet images
+  // Build playlist of images for detail view: default color + model images + extra sheet images
   const galleryImages = useMemo(() => {
-    const items: Array<{ url: string; title: string; subtitle: string }> = [
+    const items: Array<{ url: string; title: string; subtitle: string; isModel?: boolean }> = [
       { url: selectedColor.imagen, title: 'Foto Prenda', subtitle: `Color: ${selectedColor.nombre}` }
     ];
-    if (product.imagenPoster && product.imagenPoster !== selectedColor.imagen) {
-      items.push({ url: product.imagenPoster, title: 'Lookbook', subtitle: 'Foto Modelo' });
+
+    // Collect all model images (from 'modelo' column in Google Sheets or static data)
+    const modelList: string[] = [];
+    if (product.imagenesModelo && product.imagenesModelo.length > 0) {
+      for (const m of product.imagenesModelo) {
+        if (m && !modelList.includes(m)) modelList.push(m);
+      }
     }
+    if (product.imagenPoster && !modelList.includes(product.imagenPoster) && product.imagenPoster !== selectedColor.imagen) {
+      modelList.push(product.imagenPoster);
+    }
+
+    modelList.forEach((mUrl, mIdx) => {
+      if (mUrl && !items.some(it => it.url === mUrl)) {
+        items.push({
+          url: mUrl,
+          title: modelList.length > 1 ? `Modelo ${mIdx + 1}` : 'Modelo',
+          subtitle: 'Foto con Modelo',
+          isModel: true
+        });
+      }
+    });
+
     if (product.imagenes && product.imagenes.length > 0) {
       let customCounter = 1;
       for (const imgUrl of product.imagenes) {
@@ -178,14 +205,14 @@ function DetailModalGallery({
       }
     }
     return items;
-  }, [product.imagenes, selectedColor.imagen, selectedColor.nombre, product.imagenPoster]);
+  }, [product.imagenes, product.imagenesModelo, selectedColor.imagen, selectedColor.nombre, product.imagenPoster]);
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
 
   // When color selection changes, reset to index 0
   useEffect(() => {
     setActiveIdx(0);
-  }, [selectedColor.imagen, product.imagenes]);
+  }, [selectedColor.imagen, product.imagenes, product.imagenesModelo]);
 
   const currentItem = galleryImages[activeIdx] || galleryImages[0];
 
@@ -240,7 +267,12 @@ function DetailModalGallery({
           <span className="px-3 py-1 rounded-md bg-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow-sm">
             {product.marca}
           </span>
-          {product.stockLimitado && (
+          {currentItem.isModel && (
+            <span className="px-2.5 py-1 rounded-md bg-slate-950 text-amber-400 border border-amber-400/40 text-xs font-black tracking-wider uppercase shadow-md flex items-center gap-1">
+              ✨ Foto Modelo
+            </span>
+          )}
+          {product.stockLimitado && !currentItem.isModel && (
             <span className="px-2 py-0.5 rounded-md bg-slate-900 text-rose-300 border border-rose-400/40 text-[10px] font-bold tracking-wider uppercase shadow-md">
               Stock Limitado
             </span>
@@ -268,14 +300,30 @@ function DetailModalGallery({
                 className={`flex items-center gap-2 p-2 rounded-2xl border transition-all text-left ${
                   isSelected
                     ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-400/40 shadow-sm'
+                    : imgItem.isModel
+                    ? 'bg-gradient-to-br from-amber-50/50 to-white border-amber-300/80 hover:border-amber-400'
                     : 'bg-white border-slate-200 hover:border-slate-300'
                 }`}
               >
-                <div className="w-10 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-0.5 border border-slate-200 shrink-0">
+                <div className="w-10 h-12 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center p-0.5 border border-slate-200 shrink-0 relative">
                   <img src={imgItem.url} alt={imgItem.title} className="max-w-full max-h-full object-contain" />
+                  {imgItem.isModel && (
+                    <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-amber-500 text-slate-950 font-black text-[7px] leading-tight shadow-sm uppercase">
+                      Mod
+                    </span>
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block truncate">{imgItem.title}</span>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] font-bold uppercase block truncate ${imgItem.isModel ? 'text-amber-800 font-black' : 'text-slate-500'}`}>
+                      {imgItem.title}
+                    </span>
+                    {imgItem.isModel && (
+                      <span className="px-1 py-0.2 rounded bg-amber-200/80 text-amber-950 font-black text-[8px] tracking-wider uppercase shrink-0">
+                        Look
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs font-bold text-slate-900 truncate block">{imgItem.subtitle}</span>
                 </div>
               </button>

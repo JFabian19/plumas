@@ -191,6 +191,8 @@ export interface SheetProductUpdate {
   precio?: number;
   precioOriginal?: number;
   imagenes?: string[];
+  imagenesModelo?: string[];
+  imagenPoster?: string;
   tallas?: (number | string)[];
   colores?: ColorVariant[];
   descripcion?: string;
@@ -392,9 +394,35 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
 
   const catIndex = headers.findIndex(h => h === 'categoria' || h === 'seccion' || h === 'categoria_id');
   const brandIndex = headers.findIndex(h => h === 'marca' || h === 'brand');
-  const nameIndex = headers.findIndex(h => 
-    h === 'nombre_completo' || h === 'nombrecompleto' || h === 'nombre' || h === 'producto' || h === 'modelo'
+  
+  // Product name header: prefer specific name headers before generic 'modelo'
+  let nameIndex = headers.findIndex(h => 
+    h === 'nombre_completo' || h === 'nombrecompleto' || h === 'nombre' || h === 'producto'
   );
+  if (nameIndex === -1) {
+    nameIndex = headers.findIndex(h => h === 'modelo');
+  }
+
+  // Model photo column: matches 'modelo', 'imagen_modelo', 'foto_modelo', 'modelo_foto', 'modelo_imagen', 'lookbook', 'poster', 'imagen_poster'
+  let modelImgIndex = headers.findIndex(h => 
+    h === 'imagen_modelo' || 
+    h === 'foto_modelo' || 
+    h === 'modelo_imagen' || 
+    h === 'modelo_foto' || 
+    h === 'fotomodelo' || 
+    h === 'imagenmodelo' || 
+    h === 'lookbook' || 
+    h === 'poster' ||
+    h === 'imagen_poster'
+  );
+  // If 'modelo' column exists and is not used as the product name, it is the model photo column
+  if (modelImgIndex === -1 && nameIndex !== -1) {
+    const candidateIdx = headers.findIndex(h => h === 'modelo');
+    if (candidateIdx !== -1 && candidateIdx !== nameIndex) {
+      modelImgIndex = candidateIdx;
+    }
+  }
+
   const idIndex = headers.findIndex(h => h === 'producto_id' || h === 'productoid' || h === 'id');
   const cutIndex = headers.findIndex(h => h === 'corte' || h === 'tipo_corte' || h === 'fit');
   const priceIndex = headers.findIndex(h => h === 'precio' || h === 'price' || h === 'costo');
@@ -460,6 +488,19 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
       }
     }
 
+    // Collect model / lookbook images from the 'modelo' column (supports single URL or multiple separated by comma/semicolon/newline)
+    const rawModelImg = modelImgIndex !== -1 && row[modelImgIndex] ? row[modelImgIndex].trim().replace(/^"|"$/g, '') : '';
+    const modelImages: string[] = [];
+    if (rawModelImg) {
+      const parts = rawModelImg.split(/[,;\n\r]+/).map(p => p.trim().replace(/^"|"$/g, '')).filter(Boolean);
+      for (const part of parts) {
+        const cleaned = cleanImageUrl(part);
+        if (cleaned && !modelImages.includes(cleaned)) {
+          modelImages.push(cleaned);
+        }
+      }
+    }
+
     const precio = parsePrice(rawPrice);
     const precioOriginal = parsePrice(rawOrigPrice);
     const tallas = parseSizes(rawSizes);
@@ -495,6 +536,10 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
     if (precio !== undefined) update.precio = precio;
     if (precioOriginal !== undefined) update.precioOriginal = precioOriginal;
     if (imagenes.length > 0) update.imagenes = imagenes;
+    if (modelImages.length > 0) {
+      update.imagenesModelo = modelImages;
+      update.imagenPoster = modelImages[0];
+    }
     if (rawSizes) update.tallas = tallas;
     if (rawDesc) update.descripcion = rawDesc;
 
@@ -516,6 +561,9 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
         }
       }
 
+      const finalModelImages = modelImages.length > 0 ? modelImages : (matchedStatic.imagenesModelo || (matchedStatic.imagenPoster ? [matchedStatic.imagenPoster] : []));
+      const finalPoster = modelImages.length > 0 ? modelImages[0] : matchedStatic.imagenPoster;
+
       processedProducts.push({
         ...matchedStatic,
         categoriaId: categoryId,
@@ -526,6 +574,8 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
         descripcion: rawDesc || matchedStatic.descripcion,
         tallasDisponibles: rawSizes ? tallas : matchedStatic.tallasDisponibles,
         imagenes: imagenes.length > 0 ? imagenes : matchedStatic.imagenes,
+        imagenesModelo: finalModelImages.length > 0 ? finalModelImages : undefined,
+        imagenPoster: finalPoster,
         colores: parsedColores
       });
     } else {
@@ -536,6 +586,7 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
       const cleanDesc = rawDesc || `Prenda de alta calidad confeccionada con los mejores acabados de la marca ${cleanBrand}.`;
       
       const colores = parseColors(rawColors, imagenes, categoryId);
+      const posterImage = modelImages.length > 0 ? modelImages[0] : (imagenes[1] || imagenes[0] || (colores[0] ? colores[0].imagen : undefined));
 
       const newProduct: JeansProduct = {
         id: generatedId,
@@ -557,7 +608,8 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
         stockLimitado: true,
         tallasDisponibles: tallas,
         imagenes: imagenes.length > 0 ? imagenes : undefined,
-        imagenPoster: imagenes[1] || imagenes[0] || colores[0].imagen,
+        imagenesModelo: modelImages.length > 0 ? modelImages : undefined,
+        imagenPoster: posterImage,
         colores: colores
       };
 
