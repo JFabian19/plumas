@@ -246,7 +246,7 @@ function DetailModalGallery({
 
       {/* Thumbnails / Switcher Bar */}
       {galleryImages.length > 1 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
           {galleryImages.map((imgItem, idx) => {
             const isSelected = activeIdx === idx;
             return (

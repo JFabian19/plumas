@@ -403,9 +403,18 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
   const colorsIndex = headers.findIndex(h => h === 'colores_disponibles' || h === 'colores' || h === 'colors');
   const descIndex = headers.findIndex(h => h === 'descripcion' || h === 'description' || h === 'detalle');
 
-  const img1Index = headers.findIndex(h => h === 'imagen_1' || h === 'imagen1' || h === 'foto1' || h === 'foto_1' || h === 'imagen');
-  const img2Index = headers.findIndex(h => h === 'imagen_2' || h === 'imagen2' || h === 'foto2' || h === 'foto_2');
-  const img3Index = headers.findIndex(h => h === 'imagen_3' || h === 'imagen3' || h === 'foto3' || h === 'foto_3');
+  // Find column indices for up to 9 product images (imagen_1 to imagen_9, or imagen1..imagen9, foto1..foto9, etc.)
+  const imgIndices: number[] = [];
+  for (let c = 1; c <= 9; c++) {
+    const idx = headers.findIndex(h => 
+      h === `imagen_${c}` || 
+      h === `imagen${c}` || 
+      h === `foto_${c}` || 
+      h === `foto${c}` ||
+      (c === 1 && (h === 'imagen' || h === 'foto' || h === 'imagen_url' || h === 'imagenurl'))
+    );
+    imgIndices.push(idx);
+  }
 
   // Track existing static products in map
   const processedProducts: JeansProduct[] = [];
@@ -442,10 +451,14 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
 
     if (!rawName && !rawId) continue;
 
-    const img1 = img1Index !== -1 && row[img1Index] ? cleanImageUrl(row[img1Index]) : '';
-    const img2 = img2Index !== -1 && row[img2Index] ? cleanImageUrl(row[img2Index]) : '';
-    const img3 = img3Index !== -1 && row[img3Index] ? cleanImageUrl(row[img3Index]) : '';
-    const imagenes: string[] = [img1, img2, img3].filter(Boolean);
+    // Collect all valid images from the 9 image columns
+    const imagenes: string[] = [];
+    for (const imgColIdx of imgIndices) {
+      if (imgColIdx !== -1 && row[imgColIdx]) {
+        const cleaned = cleanImageUrl(row[imgColIdx]);
+        if (cleaned) imagenes.push(cleaned);
+      }
+    }
 
     const precio = parsePrice(rawPrice);
     const precioOriginal = parsePrice(rawOrigPrice);
@@ -496,11 +509,11 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
         ? parseColors(rawColors, imagenes.length > 0 ? imagenes : matchedStatic.colores.map(c => c.imagen), categoryId)
         : matchedStatic.colores;
 
-      // Update color images if new images provided
+      // Update color images if new images provided from Google Sheets
       if (imagenes.length > 0 && !rawColors) {
-        parsedColores[0].imagen = imagenes[0];
-        if (imagenes[1] && parsedColores[1]) parsedColores[1].imagen = imagenes[1];
-        if (imagenes[2] && parsedColores[2]) parsedColores[2].imagen = imagenes[2];
+        for (let imgIdx = 0; imgIdx < imagenes.length && imgIdx < parsedColores.length; imgIdx++) {
+          parsedColores[imgIdx].imagen = imagenes[imgIdx];
+        }
       }
 
       processedProducts.push({
