@@ -399,12 +399,10 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
   let nameIndex = headers.findIndex(h => 
     h === 'nombre_completo' || h === 'nombrecompleto' || h === 'nombre' || h === 'producto'
   );
-  if (nameIndex === -1) {
-    nameIndex = headers.findIndex(h => h === 'modelo');
-  }
 
-  // Model photo column: matches 'modelo', 'imagen_modelo', 'foto_modelo', 'modelo_foto', 'modelo_imagen', 'lookbook', 'poster', 'imagen_poster'
+  // Model photo column: matches exact 'modelo', 'imagen_modelo', 'foto_modelo', 'modelo_foto', 'modelo_imagen', 'lookbook', 'poster', 'imagen_poster'
   let modelImgIndex = headers.findIndex(h => 
+    h === 'modelo' ||
     h === 'imagen_modelo' || 
     h === 'foto_modelo' || 
     h === 'modelo_imagen' || 
@@ -415,11 +413,22 @@ export function processFullSheetData(productsCsv: string, categoriesCsv: string 
     h === 'poster' ||
     h === 'imagen_poster'
   );
-  // If 'modelo' column exists and is not used as the product name, it is the model photo column
-  if (modelImgIndex === -1 && nameIndex !== -1) {
-    const candidateIdx = headers.findIndex(h => h === 'modelo');
-    if (candidateIdx !== -1 && candidateIdx !== nameIndex) {
-      modelImgIndex = candidateIdx;
+
+  // If no name header was found and 'modelo' was matched as modelImgIndex,
+  // check whether the 'modelo' column actually has image URLs or text names
+  if (nameIndex === -1 && modelImgIndex !== -1) {
+    let hasUrl = false;
+    for (let r = 1; r < Math.min(rows.length, 5); r++) {
+      const cell = rows[r][modelImgIndex]?.trim();
+      if (cell && (cell.startsWith('http') || cell.includes('drive.google.com') || /\.(jpg|jpeg|png|webp|avif)/i.test(cell))) {
+        hasUrl = true;
+        break;
+      }
+    }
+    if (!hasUrl) {
+      // It's a text model name (e.g. 'Pantalón Lois'), not an image link
+      nameIndex = modelImgIndex;
+      modelImgIndex = -1;
     }
   }
 
