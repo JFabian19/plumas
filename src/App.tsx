@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { 
   ShoppingBag, Plus, Minus, X, Trash2, Search, Sparkles, Filter, 
   Ruler, Truck, ShieldCheck, MapPin, CheckCircle, Smartphone, 
-  ExternalLink, ChevronRight, Heart, Star, Tag, RefreshCw, Eye, MessageCircle,
+  ExternalLink, ChevronRight, ChevronLeft, Heart, Star, Tag, RefreshCw, Eye, MessageCircle,
   Layers, Check, ArrowRight, Grid, User, CreditCard, Building2, Package,
   ArrowLeft, ZoomIn
 } from 'lucide-react';
@@ -181,30 +181,16 @@ function DetailModalGallery({
   }, [product.imagenes, selectedColor.imagen, selectedColor.nombre, product.imagenPoster]);
 
   const [activeIdx, setActiveIdx] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   // When color selection changes, reset to index 0
   useEffect(() => {
     setActiveIdx(0);
   }, [selectedColor.imagen, product.imagenes]);
 
-  // Auto transition every 3.5s
-  useEffect(() => {
-    if (galleryImages.length <= 1 || isPaused) return;
-    const timer = setInterval(() => {
-      setActiveIdx(prev => (prev + 1) % galleryImages.length);
-    }, 3500);
-    return () => clearInterval(timer);
-  }, [galleryImages.length, isPaused]);
-
   const currentItem = galleryImages[activeIdx] || galleryImages[0];
 
   return (
-    <div 
-      className="space-y-3"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-    >
+    <div className="space-y-3">
       {/* Big Main Image Container */}
       <div 
         onClick={() => onZoom(currentItem.url)}
@@ -218,10 +204,36 @@ function DetailModalGallery({
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.35, ease: "easeInOut" }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
             className="max-w-full max-h-[420px] object-contain object-center drop-shadow-xl group-hover:scale-105 transition-transform duration-500"
           />
         </AnimatePresence>
+
+        {/* Prev / Next Arrows for Manual Navigation */}
+        {galleryImages.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx(prev => (prev - 1 + galleryImages.length) % galleryImages.length);
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md text-slate-800 hover:bg-white hover:scale-110 flex items-center justify-center shadow-md border border-slate-200 transition-all z-10"
+              title="Foto anterior"
+            >
+              <ChevronLeft className="w-5 h-5 text-slate-700" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx(prev => (prev + 1) % galleryImages.length);
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md text-slate-800 hover:bg-white hover:scale-110 flex items-center justify-center shadow-md border border-slate-200 transition-all z-10"
+              title="Siguiente foto"
+            >
+              <ChevronRight className="w-5 h-5 text-slate-700" />
+            </button>
+          </>
+        )}
 
         {/* Top Badges */}
         <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">
